@@ -27,6 +27,7 @@ const [selectedDestination, setSelectedDestination] = useState<TravelOption | nu
 const [galleryOpen, setGalleryOpen] = useState(false);
 const [galleryImages, setGalleryImages] = useState<string[]>([]);
 const [galleryIndex, setGalleryIndex] = useState(0);
+const [scrollY, setScrollY] = useState(0);
 
 const travelOptions: TravelOption[] = [
 {
@@ -346,6 +347,18 @@ setCurrentSlide((prevSlide: number) => (prevSlide + 1) % bannerSlides.length);
 return () => clearInterval(intervalId);
 }, [bannerSlides.length]);
 
+// Parallax scroll effect
+useEffect(() => {
+  const handleScroll = () => {
+    setScrollY(window.scrollY);
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }
+}, []);
+
 const handleBookTrip = (destination: TravelOption) => {
 const message = `Hello, I want to book a trip to ${destination.name}.`;
 const whatsappUrl = `https://wa.me/1234567890?text=${encodeURIComponent(message)}`;
@@ -415,7 +428,7 @@ return (
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={{ duration: 1.5, ease: "easeInOut" }}
                     style={{
-                      transform: `translateY(${window.scrollY * 0.5}px)`,
+                      transform: `translateY(${scrollY * 0.5}px)`,
                     }}
                   >
                     <img
