@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaArrowLeft } from "react-icons/fa";
-import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -50,7 +49,7 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
           "Visit local attractions",
           "Explore the city center",
           "Dinner at local restaurant",
-        ],
+        ],  
       },
       {
         day: 2,
@@ -89,12 +88,6 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
 
   return (
     <>
-      <Head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-      </Head>
       <div className="min-h-screen bg-gray-50 font-sans flex flex-col" style={{ fontFamily: 'Poppins, sans-serif' }}>
         {/* Subtle background pattern */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">

@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaWhatsapp, FaChevronRight } from "react-icons/fa";
-import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -493,15 +492,9 @@ window.addEventListener("keydown", handleKey);
 return () => window.removeEventListener("keydown", handleKey);
 }, [galleryOpen, galleryImages.length]);
 
-return (
-  <>
-    <Head>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap"
-        rel="stylesheet"
-      />
-    </Head>
-    <div className="min-h-screen bg-gray-50 font-sans flex flex-col" style={{ fontFamily: 'Poppins, sans-serif' }}>
+  return (
+    <>
+      <div className="min-h-screen bg-gray-50 font-sans flex flex-col" style={{ fontFamily: 'Poppins, sans-serif' }}>
       {/* Subtle background pattern */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gray-50"></div>
@@ -573,9 +566,11 @@ return (
                       transform: `translateY(${scrollY * 0.5}px)`,
                     }}
                   >
-                    <img
+                    <Image
                       src={slide.image}
                       alt={`Travel banner ${index + 1}`}
+                      width={1200}
+                      height={800}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/40" />

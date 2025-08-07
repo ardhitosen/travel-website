@@ -6,7 +6,7 @@ interface PageProps {
 }
 
 const ItineraryPage = async ({ params }: PageProps) => {
-  const resolvedParams = await params;
+      const resolvedParams = await params;
   
   return <ItineraryClient params={resolvedParams} />;
 };
