@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FaWhatsapp, FaChevronRight, FaArrowLeft } from "react-icons/fa";
+import { motion } from "framer-motion";
+import { FaArrowLeft } from "react-icons/fa";
 import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -145,9 +145,11 @@ const ItineraryPage = ({ params }: { params: { country: string; city: string } }
                   transform: `translateY(${scrollY * 0.5}px)`,
                 }}
               >
-                <img
+                <Image
                   src={itineraryData.image}
                   alt={`${itineraryData.city} banner`}
+                  width={1200}
+                  height={800}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-black/40" />

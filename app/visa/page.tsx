@@ -347,7 +347,7 @@ const VisaPage = () => {
             }
           }}
         >
-          {filteredVisaServices.map((visa, index) => (
+          {filteredVisaServices.map((visa) => (
             <motion.div
               key={visa.id}
               className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
@@ -359,9 +359,11 @@ const VisaPage = () => {
             >
               {/* Visa Image */}
               <div className="relative h-48 overflow-hidden">
-                <img
+                <Image
                   src={visa.image}
                   alt={visa.name}
+                  width={400}
+                  height={300}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />

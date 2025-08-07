@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FaWhatsapp, FaChevronRight, FaArrowLeft } from "react-icons/fa";
 import Head from "next/head";
 import Image from "next/image";
@@ -300,7 +300,7 @@ const CountryPage = ({ params }: { params: { country: string } }) => {
                   } 
                 }}
               >
-                {countryData.itineraries.map((itinerary, idx) => (
+                {countryData.itineraries.map((itinerary) => (
                   <motion.div
                     key={itinerary.id}
                     className="group bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer flex flex-col border border-gray-200 overflow-hidden"
@@ -315,14 +315,19 @@ const CountryPage = ({ params }: { params: { country: string } }) => {
                     }}
                   >
                     <div className="relative overflow-hidden">
-                      <motion.img
-                        src={itinerary.image}
-                        alt={itinerary.name}
-                        className="w-full h-48 sm:h-80 md:h-[400px] object-cover group-hover:scale-110 transition-transform duration-700"
-                        loading="lazy"
+                      <motion.div
+                        className="w-full h-48 sm:h-80 md:h-[400px] overflow-hidden"
                         whileHover={{ scale: 1.1 }}
                         transition={{ duration: 0.6 }}
-                      />
+                      >
+                        <Image
+                          src={itinerary.image}
+                          alt={itinerary.name}
+                          width={400}
+                          height={300}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                      </motion.div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
                     <div className="p-4 sm:p-8 flex flex-col flex-1 bg-white">
