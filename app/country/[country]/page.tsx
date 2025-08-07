@@ -23,14 +23,24 @@ interface ItineraryDay {
   activities: string[];
 }
 
-const CountryPage = ({ params }: { params: { country: string } }) => {
+const CountryPage = ({ params }: { params: Promise<{ country: string }> }) => {
   const router = useRouter();
   const [scrollY, setScrollY] = useState(0);
+  const [countryName, setCountryName] = useState("");
+
+  // Handle async params
+  useEffect(() => {
+    const getParams = async () => {
+      const resolvedParams = await params;
+      setCountryName(resolvedParams.country);
+    };
+    getParams();
+  }, [params]);
 
   // Sample data - in real app this would come from API or database
   const countryData = {
-    name: params.country.charAt(0).toUpperCase() + params.country.slice(1),
-    description: `Discover the amazing destinations in ${params.country.charAt(0).toUpperCase() + params.country.slice(1)}.`,
+    name: countryName ? countryName.charAt(0).toUpperCase() + countryName.slice(1) : "Loading...",
+    description: countryName ? `Discover the amazing destinations in ${countryName.charAt(0).toUpperCase() + countryName.slice(1)}.` : "Loading...",
     image: "https://images.unsplash.com/photo-1570191913384-7b4ff11716e7?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     itineraries: [
       {
@@ -149,7 +159,7 @@ const CountryPage = ({ params }: { params: { country: string } }) => {
   };
 
   const handleViewItinerary = (itinerary: CountryItinerary) => {
-    router.push(`/itinerary/${params.country}/${itinerary.id}`);
+    router.push(`/itinerary/${countryName}/${itinerary.id}`);
   };
 
   return (
@@ -216,9 +226,11 @@ const CountryPage = ({ params }: { params: { country: string } }) => {
                   transform: `translateY(${scrollY * 0.5}px)`,
                 }}
               >
-                <img
+                <Image
                   src={countryData.image}
                   alt={`${countryData.name} banner`}
+                  width={1200}
+                  height={800}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-black/40" />
