@@ -29,8 +29,8 @@ interface ItineraryClientProps {
 const ItineraryClient = ({ params }: ItineraryClientProps) => {
   const router = useRouter();
   const [scrollY, setScrollY] = useState(0);
-  const [cityName, setCityName] = useState(params.city);
-  const [countryName, setCountryName] = useState(params.country);
+  const cityName = params.city;
+  const countryName = params.country;
 
   // Sample data - in real app this would come from API or database
   const itineraryData: CountryItinerary = {
