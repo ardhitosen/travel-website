@@ -30,7 +30,6 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
   const router = useRouter();
   const [scrollY, setScrollY] = useState(0);
   const cityName = params.city;
-  const countryName = params.country;
 
   // Sample data - in real app this would come from API or database
   const itineraryData: CountryItinerary = {
