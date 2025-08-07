@@ -23,11 +23,20 @@ interface CountryItinerary {
   highlights: string[];
 }
 
-const ItineraryPage = ({ params }: { params: { country: string; city: string } }) => {
+const ItineraryPage = ({ params }: { params: Promise<{ country: string; city: string }> }) => {
   const router = useRouter();
   const [scrollY, setScrollY] = useState(0);
-  const [cityName, setCityName] = useState(params.city);
-  const [countryName, setCountryName] = useState(params.country);
+  const [cityName, setCityName] = useState("");
+  const [countryName] = useState("");
+
+  // Handle async params
+  useEffect(() => {
+    const getParams = async () => {
+      const resolvedParams = await params;
+      setCityName(resolvedParams.city);
+    };
+    getParams();
+  }, [params]);
 
   // Sample data - in real app this would come from API or database
   const itineraryData: CountryItinerary = {
