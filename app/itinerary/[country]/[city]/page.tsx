@@ -23,24 +23,36 @@ interface CountryItinerary {
   highlights: string[];
 }
 
-const ItineraryPage = ({ params }: { params: { country: string; city: string } }) => {
+const ItineraryPage = ({ params }: { params: Promise<{ country: string; city: string }> }) => {
   const router = useRouter();
   const [scrollY, setScrollY] = useState(0);
+  const [cityName, setCityName] = useState("");
+  const [countryName, setCountryName] = useState("");
+
+  // Handle async params
+  useEffect(() => {
+    const getParams = async () => {
+      const resolvedParams = await params;
+      setCityName(resolvedParams.city);
+      setCountryName(resolvedParams.country);
+    };
+    getParams();
+  }, [params]);
 
   // Sample data - in real app this would come from API or database
   const itineraryData: CountryItinerary = {
-    id: params.city,
-    name: params.city.charAt(0).toUpperCase() + params.city.slice(1),
-    city: params.city.charAt(0).toUpperCase() + params.city.slice(1),
+    id: cityName,
+    name: cityName ? cityName.charAt(0).toUpperCase() + cityName.slice(1) : "Loading...",
+    city: cityName ? cityName.charAt(0).toUpperCase() + cityName.slice(1) : "Loading...",
     duration: "1 Week",
     price: "$280",
     image: "https://images.unsplash.com/photo-1570191913384-7b4ff11716e7?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    description: `Experience the vibrant city life of ${params.city.charAt(0).toUpperCase() + params.city.slice(1)}.`,
+    description: cityName ? `Experience the vibrant city life of ${cityName.charAt(0).toUpperCase() + cityName.slice(1)}.` : "Loading...",
     activities: [
       {
         day: 1,
         activities: [
-          `Arrive in ${params.city.charAt(0).toUpperCase() + params.city.slice(1)}`,
+          cityName ? `Arrive in ${cityName.charAt(0).toUpperCase() + cityName.slice(1)}` : "Arrive in city",
           "Visit local attractions",
           "Explore the city center",
           "Dinner at local restaurant",
