@@ -740,7 +740,7 @@ return (
                       </h3>
                       <p className="text-gray-600 text-lg leading-relaxed max-w-3xl mx-auto">
                         Experience the passion and dedication behind Jalan Overseas. From our humble beginnings to becoming your trusted travel partner, 
-                        discover how we've been crafting unforgettable journeys across Asia for travelers worldwide. Watch our sample video to learn more about our services.
+                        discover how we&apos;ve been crafting unforgettable journeys across Asia for travelers worldwide. Watch our sample video to learn more about our services.
                       </p>
                       
                       {/* Video Stats */}
@@ -991,9 +991,11 @@ return (
               </motion.button>
               {/* Banner */}
               <div className="relative h-56 md:h-80 w-full overflow-hidden rounded-t-3xl">
-                <img
+                <Image
                   src={selectedDestination.image}
                   alt={selectedDestination.name}
+                  width={800}
+                  height={600}
                   className="w-full h-full object-cover object-center blur-sm scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1679b1]/80 via-[#1679b1]/40 to-transparent" />
