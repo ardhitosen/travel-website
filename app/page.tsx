@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaWhatsapp, FaChevronRight } from "react-icons/fa";
+import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -34,7 +35,19 @@ interface ItineraryDay {
 }
 
 const TravelApp = () => {
-const [currentSlide, setCurrentSlide] = useState(0);
+  // Fallback component for failed images
+  const ImageFallback = ({ className }: { className?: string }) => (
+    <div className={`bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center ${className}`}>
+      <div className="text-center">
+        <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <p className="text-gray-500 text-sm">Image unavailable</p>
+      </div>
+    </div>
+  );
+
+  const [currentSlide, setCurrentSlide] = useState(0);
 const [showItinerary, setShowItinerary] = useState(false);
 const [selectedDestination, setSelectedDestination] = useState<TravelOption | null>(null);
 const [galleryOpen, setGalleryOpen] = useState(false);
@@ -43,6 +56,8 @@ const [galleryIndex, setGalleryIndex] = useState(0);
 const [scrollY, setScrollY] = useState(0);
 const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 const [isVideoLoading, setIsVideoLoading] = useState(true);
+const [imageError, setImageError] = useState<{[key: string]: boolean}>({});
+const [videoError, setVideoError] = useState(false);
 const router = useRouter();
 
 const travelOptions: TravelOption[] = [
@@ -492,9 +507,15 @@ window.addEventListener("keydown", handleKey);
 return () => window.removeEventListener("keydown", handleKey);
 }, [galleryOpen, galleryImages.length]);
 
-  return (
-    <>
-      <div className="min-h-screen bg-gray-50 font-sans flex flex-col" style={{ fontFamily: 'Poppins, sans-serif' }}>
+return (
+  <>
+    <Head>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet"
+      />
+    </Head>
+    <div className="min-h-screen bg-gray-50 font-sans flex flex-col" style={{ fontFamily: 'Poppins, sans-serif' }}>
       {/* Subtle background pattern */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gray-50"></div>
@@ -566,13 +587,19 @@ return () => window.removeEventListener("keydown", handleKey);
                       transform: `translateY(${scrollY * 0.5}px)`,
                     }}
                   >
-                    <Image
-                      src={slide.image}
-                      alt={`Travel banner ${index + 1}`}
-                      width={1200}
-                      height={800}
-                      className="w-full h-full object-cover"
-                    />
+                                          {imageError[slide.image] ? (
+                        <ImageFallback className="w-full h-full" />
+                      ) : (
+                        <Image
+                          src={slide.image}
+                          alt={`Travel banner ${index + 1}`}
+                          fill
+                          className="object-cover"
+                          sizes="100vw"
+                          priority={index === 0}
+                          onError={() => setImageError(prev => ({ ...prev, [slide.image]: true }))}
+                        />
+                      )}
                     <div className="absolute inset-0 bg-black/40" />
                   </motion.div>
                 ) : null
@@ -666,22 +693,39 @@ return () => window.removeEventListener("keydown", handleKey);
                   {/* Video Player */}
                   <div className="relative aspect-video bg-gradient-to-br from-gray-900 to-gray-800 overflow-hidden rounded-t-3xl">
                     {/* Sample Video */}
-                    <video 
-                      className="w-full h-full object-cover"
-                      controls
-                      poster="/img/JOS.png"
-                      preload="metadata"
-                      onPlay={() => setIsVideoPlaying(true)}
-                      onPause={() => setIsVideoPlaying(false)}
-                      onEnded={() => setIsVideoPlaying(false)}
-                      onLoadedData={() => setIsVideoLoading(false)}
-                      onLoadStart={() => setIsVideoLoading(true)}
-                    >
-                      <source src="https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" type="video/mp4" />
-                      <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4" />
-                      <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
+                    {videoError ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100">
+                        <div className="text-center">
+                          <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-gray-500 text-lg font-medium">Video unavailable</p>
+                          <p className="text-gray-400 text-sm mt-2">Please check your internet connection</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <video 
+                        className="w-full h-full object-cover"
+                        controls
+                        poster="/img/JOS.png"
+                        preload="metadata"
+                        onPlay={() => setIsVideoPlaying(true)}
+                        onPause={() => setIsVideoPlaying(false)}
+                        onEnded={() => setIsVideoPlaying(false)}
+                        onLoadedData={() => setIsVideoLoading(false)}
+                        onLoadStart={() => setIsVideoLoading(true)}
+                        onError={() => {
+                          setIsVideoLoading(false);
+                          setVideoError(true);
+                        }}
+                        onCanPlay={() => setIsVideoLoading(false)}
+                      >
+                        <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4" />
+                        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
+                        <source src="https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" type="video/mp4" />
+                        <p className="text-white text-center p-8">Your browser does not support the video tag.</p>
+                      </video>
+                    )}
                     
                     {/* Video Overlay with Play Button */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none"></div>
@@ -883,15 +927,26 @@ return () => window.removeEventListener("keydown", handleKey);
                   viewport={{ once: true }}
                 >
                   <div className="relative overflow-hidden">
-                    <motion.img
-                      src={option.image}
-                      alt={option.name}
-                      className="w-full h-48 sm:h-80 md:h-[400px] object-cover group-hover:scale-110 transition-transform duration-700 cursor-zoom-in"
-                      loading="lazy"
+                    <motion.div
+                      className="relative w-full h-48 sm:h-80 md:h-[400px] overflow-hidden"
                       onClick={() => handleOpenGallery(option.gallery, 0)}
                       whileHover={{ scale: 1.1 }}
                       transition={{ duration: 0.6 }}
-                    />
+                    >
+                      {imageError[option.image] ? (
+                        <ImageFallback className="w-full h-full" />
+                      ) : (
+                        <Image
+                          src={option.image}
+                          alt={option.name}
+                          fill
+                          className="object-cover group-hover:scale-110 transition-transform duration-700 cursor-zoom-in"
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                          loading="lazy"
+                          onError={() => setImageError(prev => ({ ...prev, [option.image]: true }))}
+                        />
+                      )}
+                    </motion.div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
                   <div className="p-4 sm:p-8 flex flex-col flex-1 bg-white">
@@ -986,13 +1041,18 @@ return () => window.removeEventListener("keydown", handleKey);
               </motion.button>
               {/* Banner */}
               <div className="relative h-56 md:h-80 w-full overflow-hidden rounded-t-3xl">
-                <Image
-                  src={selectedDestination.image}
-                  alt={selectedDestination.name}
-                  width={800}
-                  height={600}
-                  className="w-full h-full object-cover object-center blur-sm scale-105"
-                />
+                {imageError[selectedDestination.image] ? (
+                  <ImageFallback className="w-full h-full" />
+                ) : (
+                  <Image
+                    src={selectedDestination.image}
+                    alt={selectedDestination.name}
+                    fill
+                    className="object-cover object-center blur-sm scale-105"
+                    sizes="100vw"
+                    onError={() => setImageError(prev => ({ ...prev, [selectedDestination.image]: true }))}
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1679b1]/80 via-[#1679b1]/40 to-transparent" />
                 <div className="absolute inset-0 flex items-end md:items-center md:justify-center px-6 md:px-0 pb-6 md:pb-0">
                   <div className="max-w-3xl w-full mx-auto">
@@ -1207,16 +1267,27 @@ return () => window.removeEventListener("keydown", handleKey);
               ×
             </motion.button>
             <div className="flex items-center justify-center w-full h-[500px] bg-gradient-to-br from-[#1679b1]/10 to-[#f05b2d]/10">
-              <motion.img
+              <motion.div
                 key={galleryImages[galleryIndex]}
-                src={galleryImages[galleryIndex]}
-                alt="Gallery image"
-                className="object-contain max-h-[480px] w-full rounded-2xl shadow-2xl"
+                className="relative w-full max-h-[480px] h-[480px]"
                 initial={{ opacity: 0, scale: 1.05 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.6, ease: "easeInOut" }}
-              />
+              >
+                {imageError[galleryImages[galleryIndex]] ? (
+                  <ImageFallback className="w-full h-full rounded-2xl" />
+                ) : (
+                  <Image
+                    src={galleryImages[galleryIndex]}
+                    alt="Gallery image"
+                    fill
+                    className="object-contain rounded-2xl shadow-2xl"
+                    sizes="(max-width: 768px) 100vw, 80vw"
+                    onError={() => setImageError(prev => ({ ...prev, [galleryImages[galleryIndex]]: true }))}
+                  />
+                )}
+              </motion.div>
             </div>
             <div className="flex justify-between items-center w-full px-8 py-6 bg-white/80 backdrop-blur-xl border-t border-white/30">
               <motion.button
