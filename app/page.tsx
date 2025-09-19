@@ -263,7 +263,7 @@ return (
                  {
                    icon: "📋",
                    title: "Visa",
-                   description: "Check available visa requirements and application procedures.",
+                   description: "Check available visa requirements and applications.",
                   action: () => router.push('/visa'),
                    color: "from-blue-600 to-blue-700"
                  },
