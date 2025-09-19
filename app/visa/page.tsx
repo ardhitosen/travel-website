@@ -217,7 +217,7 @@ const VisaPage = () => {
 
   const handleBookVisa = (visa: VisaService) => {
     const message = `Hello, I want to apply for ${visa.name} for ${visa.country}.`;
-    const whatsappUrl = `https://wa.me/1234567890?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/6281553548899?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, "_blank");
   };
 
@@ -445,7 +445,7 @@ const VisaPage = () => {
             className="bg-white text-blue-600 font-bold py-3 px-8 rounded-xl hover:bg-gray-100 transition-colors"
             onClick={() => {
               const message = "Hello, I need custom visa assistance.";
-              const whatsappUrl = `https://wa.me/1234567890?text=${encodeURIComponent(message)}`;
+              const whatsappUrl = `https://wa.me/6281553548899?text=${encodeURIComponent(message)}`;
               window.open(whatsappUrl, "_blank");
             }}
             whileHover={{ scale: 1.05 }}

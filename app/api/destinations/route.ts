@@ -2,6 +2,11 @@
 import prisma from "../../lib/prisma";
 
 export async function GET() {
+  if (process.env.NODE_ENV === "development") {
+    // Use mock data in development
+    const { destinations } = await import("../../../mockData/destinations");
+    return NextResponse.json(destinations);
+  }
   const destinations = await prisma.destination.findMany({
     include: { itineraries: { include: { days: true } }, gallery: true }
   });

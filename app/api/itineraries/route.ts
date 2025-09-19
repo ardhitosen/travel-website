@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
-import prisma from "@/app/lib/prisma";
+import prisma from "../../lib/prisma";
 
 export async function GET() {
+  if (process.env.NODE_ENV === "development") {
+    // Use mock data in development
+    const { itineraries } = await import("../../../mockData/itineraries");
+    return NextResponse.json(itineraries);
+  }
   const itineraries = await prisma.itinerary.findMany({ include: { days: true, destination: true } });
   return NextResponse.json(itineraries);
 }

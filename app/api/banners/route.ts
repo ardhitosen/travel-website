@@ -2,6 +2,11 @@
 import prisma from "../../lib/prisma";
 
 export async function GET() {
+  if (process.env.NODE_ENV === "development") {
+    // Use mock data in development
+    const { banners } = await import("../../../mockData/banners");
+    return NextResponse.json(banners);
+  }
   const banners = await prisma.bannerSlide.findMany({ orderBy: { position: "asc" } });
   return NextResponse.json(banners);
 }

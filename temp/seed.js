@@ -11,8 +11,8 @@ async function main() {
     await prisma.destination.deleteMany();
     const passwordHash = await bcryptjs_1.default.hash("admin123", 10);
     await prisma.user.upsert({
-        where: { email: "admin@jos.com" },
-        create: { email: "admin@jos.com", passwordHash, role: "admin" },
+    where: { email: "info@jalanoverseas.com" },
+    create: { email: "info@jalanoverseas.com", passwordHash, role: "admin" },
         update: { passwordHash },
     });
     await prisma.bannerSlide.createMany({ data: [

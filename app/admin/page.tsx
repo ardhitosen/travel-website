@@ -10,8 +10,17 @@ const AdminPage = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const hasToken = document.cookie.split(";").some(c => c.trim().startsWith("token="));
-    if (!hasToken) router.replace("/login");
+    const check = async () => {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+        if (!res.ok) return router.replace('/login');
+        const j = await res.json().catch(() => ({}));
+        if (!j.ok) return router.replace('/login');
+      } catch (e) {
+        router.replace('/login');
+      }
+    };
+    check();
   }, [router]);
 
   const fetchAll = async () => {
@@ -29,17 +38,17 @@ const AdminPage = () => {
     fetchAll();
   }, []);
 
-  const uploadToCloudinary = async (file: File) => {
+  const uploadFile = async (file: File) => {
     const form = new FormData();
     form.append("file", file);
     const res = await fetch("/api/upload", { method: "POST", body: form });
     if (!res.ok) throw new Error("Upload failed");
     const data = await res.json();
-    return data.secure_url as string;
+    return data.url as string;
   };
 
   const addBanner = async (file: File, fact: string, destination: string) => {
-    const imageUrl = await uploadToCloudinary(file);
+    const imageUrl = await uploadFile(file);
     await fetch("/api/banners", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

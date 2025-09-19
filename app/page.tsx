@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaWhatsapp, FaChevronRight } from "react-icons/fa";
-import Head from "next/head";
+// removed Head since we rely on global fonts
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -61,6 +61,8 @@ const [videoError, setVideoError] = useState(false);
 const router = useRouter();
   const [fetchedBanners, setFetchedBanners] = useState<any[] | null>(null);
   const [fetchedDestinations, setFetchedDestinations] = useState<any[] | null>(null);
+  const [promoModalOpen, setPromoModalOpen] = useState(false);
+  const [selectedPromoImage, setSelectedPromoImage] = useState<string>("");
 
   // Derived data from backend
   const bannerSlides = (fetchedBanners || []).map((s: any) => ({ image: s.imageUrl, fact: s.fact, destination: s.destination }));
@@ -80,29 +82,9 @@ const router = useRouter();
     load();
   }, []);
 
-useEffect(() => {
-    if (!bannerSlides.length) return;
-const intervalId = setInterval(() => {
-setCurrentSlide((prevSlide: number) => (prevSlide + 1) % bannerSlides.length);
-}, 3000);
-return () => clearInterval(intervalId);
-}, [bannerSlides.length]);
-
-// Parallax scroll effect
-useEffect(() => {
-  const handleScroll = () => {
-    setScrollY(window.scrollY);
-  };
-
-  if (typeof window !== 'undefined') {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }
-}, []);
-
   const handleBookTrip = (destination: any) => {
 const message = `Hello, I want to book a trip to ${destination.name}.`;
-const whatsappUrl = `https://wa.me/1234567890?text=${encodeURIComponent(message)}`;
+const whatsappUrl = `https://wa.me/6281553548899?text=${encodeURIComponent(message)}`;
 window.open(whatsappUrl, "_blank");
 };
 
@@ -110,6 +92,11 @@ const handleOpenGallery = (images: string[], index: number = 0) => {
 setGalleryImages(images);
 setGalleryIndex(index);
 setGalleryOpen(true);
+};
+
+const handleOpenPromoModal = (image: string) => {
+setSelectedPromoImage(image);
+setPromoModalOpen(true);
 };
 
 useEffect(() => {
@@ -125,13 +112,7 @@ return () => window.removeEventListener("keydown", handleKey);
 
 return (
   <>
-    <Head>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap"
-        rel="stylesheet"
-      />
-    </Head>
-    <div className="min-h-screen bg-gray-50 font-sans flex flex-col" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
       {/* Subtle background pattern */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gray-50"></div>
@@ -202,7 +183,7 @@ return (
         </section>
 
           {/* Welcome Title */}
-        <section className="relative px-4 bg-white py-6 sm:py-8 mt-2 sm:mt-4">
+        <section className="relative px-4 bg-white py-6 sm:py-2 mt-2 sm:mt-4">
           <div className="w-full">
             <motion.div 
               className="text-center mb-2 px-5"
@@ -211,7 +192,7 @@ return (
               transition={{ delay: 0.1, duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <span className="inline-block bg-blue-600 text-white font-extrabold text-2xl sm:text-4xl md:text-5xl px-6 sm:px-10 py-3 sm:py-6 md:py-8 rounded-full shadow-lg tracking-wide">
+              <span className="inline-block text-blue-600 font-extrabold text-3xl sm:text-5xl md:text-7xl lg:text-8xl px-8 sm:px-12 py-4 sm:py-8 md:py-10 lg:py-2 tracking-wide">
                 Welcome to Jalan Overseas
               </span>
             </motion.div>
@@ -229,7 +210,7 @@ return (
               viewport={{ once: true }}
             >
               <motion.p
-                className="text-lg sm:text-xl md:text-2xl text-gray-600 font-light mb-8 sm:mb-12 max-w-4xl mx-auto leading-relaxed"
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-600 font-light mb-8 sm:mb-12 max-w-5xl mx-auto leading-relaxed"
                 initial={{ y: 30, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.8 }}
@@ -258,24 +239,26 @@ return (
                {[
                  {
                    icon: "📋",
-                   title: "VISA",
+                   title: "Visa",
                    description: "Check available visa requirements and application procedures.",
-                   action: () => router.push('/visa'),
+                  action: () => router.push('/visa'),
                    color: "from-blue-600 to-blue-700"
-                 },
-                 {
-                   icon: "✈️",
-                   title: "Book Flight",
-                   description: "Find and book the best flights to your dream destinations.",
-                   action: () => router.push('/flights'),
-                   color: "from-green-600 to-green-700"
                  },
                  {
                    icon: "🏨",
                    title: "Hotels",
                    description: "Discover and reserve premium accommodations worldwide.",
-                   action: () => router.push('/hotels'),
+                  // Open WhatsApp for hotels inquiries
+                  action: () => handleBookTrip({ name: 'Hotels' }),
                    color: "from-purple-600 to-purple-700"
+                 },
+                 {
+                   icon: "📝",
+                   title: "Custom Order",
+                   description: "Request a tailored itinerary — we design a package just for you.",
+                  // Open WhatsApp for custom order requests
+                  action: () => handleBookTrip({ name: 'Custom Order' }),
+                   color: "from-yellow-500 to-orange-500"
                  }
                ].map((button, index) => (
                  <motion.div
@@ -289,10 +272,10 @@ return (
                    onClick={button.action}
                  >
                    <div className="text-6xl mb-6">{button.icon}</div>
-                   <h3 className="text-2xl font-bold text-gray-800 mb-4">{button.title}</h3>
-                   <p className="text-gray-600 text-lg leading-relaxed mb-6">{button.description}</p>
+                   <h3 className="text-3xl font-bold text-gray-800 mb-4">{button.title}</h3>
+                   <p className="text-gray-600 text-xl leading-relaxed mb-6">{button.description}</p>
                    <motion.button
-                     className={`w-full bg-gradient-to-r ${button.color} text-white font-bold py-4 px-6 rounded-2xl shadow-lg text-lg transition-all duration-300 hover:shadow-xl`}
+                     className={`w-full bg-gradient-to-r ${button.color} text-white font-bold py-4 px-6 rounded-2xl shadow-lg text-xl transition-all duration-300 hover:shadow-xl`}
                      whileHover={{ scale: 1.05 }}
                      whileTap={{ scale: 0.95 }}
                    >
@@ -307,8 +290,75 @@ return (
           {/* Destinations */}
          <section className="relative py-20 px-4 bg-white">
            <div className="w-full">
+             {/* Promotional Images Section */}
+             <motion.div
+               className="mb-16 sm:mb-20"
+               initial={{ opacity: 0, y: 30 }}
+               whileInView={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.8 }}
+               viewport={{ once: true }}
+             >
+               <motion.h3
+                 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-gray-800 mb-8 sm:mb-12 text-center"
+                 initial={{ opacity: 0, scale: 0.9 }}
+                 whileInView={{ opacity: 1, scale: 1 }}
+                 transition={{ duration: 0.6, delay: 0.2 }}
+                 viewport={{ once: true }}
+               >
+                 Special Promotions
+               </motion.h3>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
+                 {[
+                   {
+                     id: 1,
+                     image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1000&auto=format&fit=crop",
+                     title: "Summer Escape",
+                     description: "Up to 30% off on summer destinations"
+                   },
+                   {
+                     id: 2,
+                     image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1000&auto=format&fit=crop",
+                     title: "Family Packages",
+                     description: "Special rates for family vacations"
+                   }
+                 ].map((promo, idx) => (
+                   <motion.div
+                     key={promo.id}
+                     className="group relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer"
+                     whileHover={{ scale: 1.02, y: -5 }}
+                     initial={{ opacity: 0, y: 50 }}
+                     whileInView={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 0.6, delay: idx * 0.2 }}
+                     viewport={{ once: true }}
+                     onClick={() => handleOpenPromoModal(promo.image)}
+                   >
+                     <div className="relative h-48 sm:h-64 overflow-hidden">
+                       {imageError[promo.image] ? (
+                         <ImageFallback className="w-full h-full" />
+                       ) : (
+                         <Image
+                           src={promo.image}
+                           alt={promo.title}
+                           fill
+                           className="object-cover group-hover:scale-110 transition-transform duration-700"
+                           sizes="(max-width: 640px) 100vw, 50vw"
+                           loading="lazy"
+                           onError={() => setImageError(prev => ({ ...prev, [promo.image]: true }))}
+                         />
+                       )}
+                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                       <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                         <h4 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">{promo.title}</h4>
+                         <p className="text-base sm:text-lg md:text-xl opacity-90">{promo.description}</p>
+                       </div>
+                     </div>
+                   </motion.div>
+                 ))}
+               </div>
+             </motion.div>
+
              <motion.h2 
-               className="text-4xl md:text-6xl font-extrabold text-gray-800 mb-12 sm:mb-16 text-center mt-16 sm:mt-32"
+               className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-gray-800 mb-8 sm:mb-12 text-center"
                initial={{ y: 30, opacity: 0 }}
                whileInView={{ y: 0, opacity: 1 }}
                transition={{ duration: 0.8 }}
@@ -377,10 +427,10 @@ return (
                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                    </div>
                    <div className="p-4 sm:p-8 flex flex-col flex-1 bg-white">
-                     <h3 className="text-lg sm:text-2xl font-bold text-blue-600 mb-2 sm:mb-3">
+                     <h3 className="text-xl sm:text-3xl md:text-4xl font-bold text-blue-600 mb-2 sm:mb-3">
                        {option.name}
                      </h3>
-                     <p className="text-gray-600 mb-3 sm:mb-4 flex-1 text-sm sm:text-lg font-light">
+                     <p className="text-gray-600 mb-3 sm:mb-4 flex-1 text-base sm:text-xl md:text-2xl font-light">
                        {option.description}
                      </p>
                         {highlights && highlights.length > 0 && (
@@ -401,7 +451,7 @@ return (
                      )}
                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-auto flex-nowrap w-full">
                        <motion.button
-                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-sm sm:text-base md:text-lg transition-all min-w-0 whitespace-nowrap"
+                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-base sm:text-lg md:text-xl transition-all min-w-0 whitespace-nowrap"
                          onClick={(e: React.MouseEvent) => {
                            e.stopPropagation();
                            router.push(`/country/${option.name.toLowerCase()}`);
@@ -716,103 +766,62 @@ return (
           </motion.div>
         </motion.div>
       )}
-      
-        {/* Footer */}
-      <footer className="w-full bg-gradient-to-br from-gray-900 to-blue-900 text-white py-8 relative z-20">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            
-            {/* Company Info */}
-            <motion.div 
-              className="flex items-center gap-3"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <Image 
-                src="/img/JOS.png" 
-                alt="Jalan Overseas Logo" 
-                width={40} 
-                height={40} 
-                className="rounded-lg shadow-lg"
-              />
-              <div>
-                <h3 className="text-xl font-bold text-white">Jalan Overseas</h3>
-                <p className="text-blue-200 text-sm">Your Travel Expert</p>
-              </div>
-            </motion.div>
 
-            {/* Contact Info */}
-            <motion.div 
-              className="flex flex-col sm:flex-row gap-4 text-sm"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              <span className="flex items-center gap-2 text-gray-300">
-                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                </svg>
-                +1 234 567 8901
-              </span>
-              <span className="flex items-center gap-2 text-gray-300">
-                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-                hello@jos.com
-              </span>
-            </motion.div>
-
-            {/* Social Links */}
-            <motion.div 
-              className="flex space-x-3"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              viewport={{ once: true }}
-            >
-              <motion.a 
-                href="#" 
-                className="w-8 h-8 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-                </svg>
-              </motion.a>
-              <motion.a 
-                href="#" 
-                className="w-8 h-8 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                </svg>
-              </motion.a>
-            </motion.div>
-          </div>
-
-          {/* Copyright */}
-          <motion.div 
-            className="mt-6 pt-4 border-t border-gray-700 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            viewport={{ once: true }}
+      {/* Promo Modal */}
+      {promoModalOpen && (
+        <motion.div
+          className="fixed inset-0 z-[50] flex items-center justify-center bg-gradient-to-br from-black/30 via-[#1679b1]/20 to-[#f05b2d]/30 backdrop-blur-md"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setPromoModalOpen(false)}
+        >
+          <motion.div
+            className="relative max-w-5xl w-full mx-4 bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col items-center border-2 border-white/30"
+            initial={{ scale: 0.9, y: 50, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 50, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-            <p className="text-gray-400 text-sm">
-              &copy; {new Date().getFullYear()} Jalan Overseas. All rights reserved.
-            </p>
+            <motion.button
+              className="absolute top-4 right-4 text-[#1679b1] hover:text-[#f05b2d] text-3xl font-bold z-10 bg-white/80 backdrop-blur-sm rounded-full w-10 h-10 flex items-center justify-center shadow-lg border border-white/30"
+              onClick={() => setPromoModalOpen(false)}
+              aria-label="Close promo modal"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              transition={{ duration: 0.2 }}
+            >
+              ×
+            </motion.button>
+            <div className="flex items-center justify-center w-full h-[70vh] sm:h-[600px] bg-gradient-to-br from-[#1679b1]/10 to-[#f05b2d]/10">
+              <motion.div
+                key={selectedPromoImage}
+                className="relative w-full h-full max-h-[580px]"
+                initial={{ opacity: 0, scale: 1.05 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+              >
+                {imageError[selectedPromoImage] ? (
+                  <ImageFallback className="w-full h-full rounded-2xl" />
+                ) : (
+                  <Image
+                    src={selectedPromoImage}
+                    alt="Promotion image"
+                    fill
+                    className="object-contain rounded-2xl shadow-2xl"
+                    sizes="(max-width: 768px) 100vw, 90vw"
+                    onError={() => setImageError(prev => ({ ...prev, [selectedPromoImage]: true }))}
+                  />
+                )}
+              </motion.div>
+            </div>
           </motion.div>
-        </div>
-      </footer>
+        </motion.div>
+      )}
     </div>
   </>
 );
 };
-
 export default TravelApp;
