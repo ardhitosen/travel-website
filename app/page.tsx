@@ -47,17 +47,15 @@ const TravelApp = () => {
     </div>
   );
 
-  const [currentSlide, setCurrentSlide] = useState(0);
 const [showItinerary, setShowItinerary] = useState(false);
   const [selectedDestination] = useState<TravelOption | null>(null);
 const [galleryOpen, setGalleryOpen] = useState(false);
 const [galleryImages, setGalleryImages] = useState<string[]>([]);
 const [galleryIndex, setGalleryIndex] = useState(0);
 const [scrollY] = useState(0);
-const [isVideoPlaying] = useState(false);
-const [isVideoLoading] = useState(true);
 const [imageError, setImageError] = useState<{[key: string]: boolean}>({});
 const router = useRouter();
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [fetchedBanners, setFetchedBanners] = useState<Record<string, unknown>[] | null>(null);
   const [fetchedDestinations, setFetchedDestinations] = useState<TravelOption[] | null>(null);
   const [promoModalOpen, setPromoModalOpen] = useState(false);
@@ -92,10 +90,20 @@ const router = useRouter();
         ]);
         if (Array.isArray(b)) setFetchedBanners(b);
         if (Array.isArray(d)) setFetchedDestinations(d);
-      } catch (e) {}
+      } catch (_e) {
+        // ignore
+      }
     };
     load();
   }, []);
+
+    useEffect(() => {
+      if (!bannerSlides.length) return;
+      const t = setInterval(() => {
+        setCurrentSlide((s) => (s + 1) % bannerSlides.length);
+      }, 6000);
+      return () => clearInterval(t);
+    }, [bannerSlides.length]);
 
   const handleBookTrip = (destination: { name?: string }) => {
     const message = `Hello, I want to book a trip to ${destination.name || 'your selection'}.`;

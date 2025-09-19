@@ -3,9 +3,18 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+type Banner = { id?: number | string; imageUrl?: string; fact?: string; destination?: string };
+type Destination = {
+  id?: string | number;
+  imageUrl?: string;
+  name?: string;
+  description?: string;
+  highlights?: unknown;
+};
+
 const AdminPage = () => {
-  const [banners, setBanners] = useState<Array<Record<string, any>>>([]);
-  const [destinations, setDestinations] = useState<Array<Record<string, any>>>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -16,7 +25,8 @@ const AdminPage = () => {
         if (!res.ok) return router.replace('/login');
         const j = await res.json().catch(() => ({}));
         if (!j.ok) return router.replace('/login');
-      } catch (e) {
+      } catch (_e) {
+        // ignore network/auth errors and redirect to login
         router.replace('/login');
       }
     };
@@ -57,9 +67,23 @@ const AdminPage = () => {
     await fetchAll();
   };
 
-  const deleteBanner = async (id: number) => {
-    await fetch(`/api/banners/${id}`, { method: "DELETE" });
+  const deleteBanner = async (id: number | string) => {
+    const idNum = Number(id);
+    await fetch(`/api/banners/${idNum}`, { method: "DELETE" });
     await fetchAll();
+  };
+
+  const normalizeHighlights = (h: unknown): string[] => {
+    if (!h) return [];
+    if (Array.isArray(h)) return h.map(String);
+    // handle legacy { values: [...] } wrapper
+    try {
+      const maybe = h as { values?: unknown };
+      if (Array.isArray(maybe.values)) return maybe.values.map(String);
+    } catch (_err) {
+      // fallthrough
+    }
+    return [];
   };
 
   return (
@@ -78,7 +102,7 @@ const AdminPage = () => {
                 <div className="font-medium">{b.destination}</div>
                 <div className="text-sm text-gray-600">{b.fact}</div>
               </div>
-              <button className="px-3 py-2 bg-red-600 text-white rounded" onClick={() => deleteBanner(b.id)}>Delete</button>
+              <button className="px-3 py-2 bg-red-600 text-white rounded" onClick={() => deleteBanner(b.id ?? '')}>Delete</button>
             </li>
           ))}
         </ul>
@@ -88,8 +112,8 @@ const AdminPage = () => {
         <h2 className="text-2xl font-semibold mb-4">Destinations</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {destinations.map((d) => {
-            const dest = d as { id?: string | number; imageUrl?: string; name?: string; description?: string; highlights?: unknown };
-            const highlights = Array.isArray(dest.highlights) ? dest.highlights : (dest.highlights && (dest.highlights as any).values) || [];
+            const dest = d as Destination;
+            const highlights = normalizeHighlights(dest.highlights);
             return (
               <div key={dest.id} className="p-4 border rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
@@ -97,7 +121,7 @@ const AdminPage = () => {
                   <div className="font-semibold">{dest.name}</div>
                 </div>
                 <div className="text-sm text-gray-600 mb-2">{dest.description}</div>
-                <div className="text-sm">Highlights: {(Array.isArray(highlights) ? highlights : []).join(", ")}</div>
+                <div className="text-sm">Highlights: {highlights.join(", ")}</div>
               </div>
             );
           })}

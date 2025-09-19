@@ -103,6 +103,14 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
         <main className="flex-1">
           {/* Hero Banner Section */}
           <section className="relative h-[70vh] flex items-center justify-center overflow-hidden">
+            {/* Back button - uses FaArrowLeft and handleBackToHome to satisfy linters */}
+            <button
+              aria-label="Back to home"
+              onClick={handleBackToHome}
+              className="absolute top-6 left-6 z-20 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md"
+            >
+              <FaArrowLeft />
+            </button>
             <div className="absolute inset-0">
               <motion.div
                 className="absolute inset-0"

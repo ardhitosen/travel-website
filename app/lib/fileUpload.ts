@@ -1,6 +1,5 @@
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
-import { NextRequest } from 'next/server';
 
 export interface UploadResult {
   success: boolean;
