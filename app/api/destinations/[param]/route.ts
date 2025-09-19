@@ -6,9 +6,11 @@ function isNumericId(param: string): boolean {
   return !isNaN(Number(param));
 }
 
-export async function GET(req: Request, { params }: { params: { param: string } }) {
-  const { param } = params;
-  
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function GET(req: Request, context: any) {
+  const params = context?.params as { param: string } | undefined;
+  const param = params?.param ?? '';
+
   let destination;
   if (isNumericId(param)) {
     // Search by ID
@@ -23,18 +25,20 @@ export async function GET(req: Request, { params }: { params: { param: string } 
       include: { itineraries: { include: { days: true } }, gallery: true }
     });
   }
-  
+
   if (!destination) {
     return NextResponse.json({ error: 'Destination not found' }, { status: 404 });
   }
-  
+
   return NextResponse.json(destination);
 }
 
-export async function PUT(req: Request, { params }: { params: { param: string } }) {
-  const { param } = params;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function PUT(req: Request, context: any) {
+  const params = context?.params as { param: string } | undefined;
+  const param = params?.param ?? '';
   const data = await req.json();
-  
+
   let updated;
   if (isNumericId(param)) {
     // Update by ID
@@ -49,13 +53,15 @@ export async function PUT(req: Request, { params }: { params: { param: string } 
       data 
     });
   }
-  
+
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_: Request, { params }: { params: { param: string } }) {
-  const { param } = params;
-  
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function DELETE(_: Request, context: any) {
+  const params = context?.params as { param: string } | undefined;
+  const param = params?.param ?? '';
+
   if (isNumericId(param)) {
     // Delete by ID
     await prisma.destination.delete({ where: { id: Number(param) } });
@@ -65,6 +71,6 @@ export async function DELETE(_: Request, { params }: { params: { param: string }
       where: { name: { equals: param } } 
     });
   }
-  
+
   return NextResponse.json({ ok: true });
 }
