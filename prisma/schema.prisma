@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+}
+
+model BannerSlide {
+  id           Int      @id @default(autoincrement())
+  imageUrl     String
+  fact         String
+  destination  String
+  position     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Destination {
+  id           Int             @id @default(autoincrement())
+  name         String          @unique
+  description  String
+  imageUrl     String
+  highlights   Json
+  badge        String?
+  itineraries  Itinerary[]
+  gallery      GalleryImage[]
+  visas        VisaType[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model Itinerary {
+  id           Int          @id @default(autoincrement())
+  slug         String       @unique
+  name         String
+  city         String
+  duration     String
+  price        String
+  imageUrl     String
+  description  String
+  highlights   Json
+  destination  Destination  @relation(fields: [destinationId], references: [id])
+  destinationId Int
+  days         ItineraryDay[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model ItineraryDay {
+  id          Int        @id @default(autoincrement())
+  dayNumber   Int
+  activities  Json
+  itinerary   Itinerary  @relation(fields: [itineraryId], references: [id])
+  itineraryId Int
+}
+
+model GalleryImage {
+  id            Int          @id @default(autoincrement())
+  imageUrl      String
+  alt           String?
+  destination   Destination  @relation(fields: [destinationId], references: [id])
+  destinationId Int
+  position      Int          @default(0)
+}
+
+model VisaType {
+  id              Int           @id @default(autoincrement())
+  name            String
+  description     String
+  duration        String        // e.g., "30 days", "90 days", "1 year"
+  processingTime  String        // e.g., "3-5 business days", "2-4 weeks"
+  price           String        // e.g., "$50", "$100"
+  requirements    Json          // Array of requirement strings
+  documents       Json          // Array of required documents
+  validity        String        // e.g., "Single entry", "Multiple entry"
+  destination     Destination   @relation(fields: [destinationId], references: [id])
+  destinationId   Int
+  applications    VisaApplication[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model VisaApplication {
+  id              Int           @id @default(autoincrement())
+  firstName       String
+  lastName        String
+  email           String
+  phone           String
+  passportNumber  String
+  nationality     String
+  dateOfBirth     DateTime
+  passportExpiry  DateTime
+  travelPurpose   String
+  intendedArrival DateTime
+  status          String        @default("pending") // pending, approved, rejected, processing
+  visaType        VisaType      @relation(fields: [visaTypeId], references: [id])
+  visaTypeId      Int
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}

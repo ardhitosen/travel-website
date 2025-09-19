@@ -170,36 +170,6 @@ const CountryClient = ({ params }: CountryClientProps) => {
         </div>
         
         {/* Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-30 border-b border-gray-200">
-          <div className="mx-3 py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-            <motion.div 
-              className="flex items-center gap-3 min-w-0"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <Image 
-                src="/img/JOS.png" 
-                alt="JOS Overseas Logo" 
-                width={200} 
-                height={100} 
-                className="flex-shrink-0"
-              />              
-            </motion.div>
-            
-            {/* Back Button */}
-            <motion.button
-              onClick={handleBackToHome}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <FaArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Home</span>
-            </motion.button>
-          </div>
-        </header>
 
         <main className="flex-1">
           {/* Hero Banner Section */}

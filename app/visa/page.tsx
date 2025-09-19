@@ -224,44 +224,6 @@ const VisaPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-30 border-b border-gray-200">
-        <div className="mx-3 py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <motion.div 
-            className="flex items-center gap-3"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <button
-              onClick={() => router.back()}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <FaArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <Image 
-              src="/img/JOS.png" 
-              alt="JOS Overseas Logo" 
-              width={150} 
-              height={75} 
-              className="flex-shrink-0"
-            />
-          </motion.div>
-          
-          <motion.div 
-            className="flex items-center gap-4 text-sm md:text-base"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <div className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M22 16.92V19a2 2 0 01-2 2A19.72 19.72 0 013 5a2 2 0 012-2h2.09a2 2 0 012 1.72c.13.81.36 1.6.68 2.35a2 2 0 01-.45 2.11l-.27.27a16 16 0 006.29 6.29l.27-.27a2 2 0 012.11-.45c.75.32 1.54.55 2.35.68A2 2 0 0122 16.92z" />
-              </svg>
-              <span className="hidden sm:inline">+1 234 567 8901</span>
-            </div>
-          </motion.div>
-        </div>
-      </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Hero Section */}
