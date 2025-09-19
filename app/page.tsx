@@ -25,7 +25,7 @@ interface CountryItinerary {
   price: string;
   image: string;
   description: string;
-  activities: ItineraryDay[];
+  days: ItineraryDay[]; // API shape uses `days` containing activities
   highlights: string[];
 }
 
@@ -49,7 +49,7 @@ const TravelApp = () => {
 
   const [currentSlide, setCurrentSlide] = useState(0);
 const [showItinerary, setShowItinerary] = useState(false);
-  const [selectedDestination, setSelectedDestination] = useState<any | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState<TravelOption | null>(null);
 const [galleryOpen, setGalleryOpen] = useState(false);
 const [galleryImages, setGalleryImages] = useState<string[]>([]);
 const [galleryIndex, setGalleryIndex] = useState(0);
@@ -58,14 +58,27 @@ const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 const [isVideoLoading, setIsVideoLoading] = useState(true);
 const [imageError, setImageError] = useState<{[key: string]: boolean}>({});
 const router = useRouter();
-  const [fetchedBanners, setFetchedBanners] = useState<any[] | null>(null);
-  const [fetchedDestinations, setFetchedDestinations] = useState<any[] | null>(null);
+  const [fetchedBanners, setFetchedBanners] = useState<Record<string, unknown>[] | null>(null);
+  const [fetchedDestinations, setFetchedDestinations] = useState<TravelOption[] | null>(null);
   const [promoModalOpen, setPromoModalOpen] = useState(false);
   const [selectedPromoImage, setSelectedPromoImage] = useState<string>("");
 
   // Derived data from backend
-  const bannerSlides = (fetchedBanners || []).map((s) => ({ image: (s as any).imageUrl, fact: (s as any).fact, destination: (s as any).destination }));
+  const bannerSlides = (fetchedBanners || []).map((s) => {
+    const src = s as Record<string, unknown>;
+    const image = typeof src["imageUrl"] === "string" ? (src["imageUrl"] as string) : "";
+    const fact = typeof src["fact"] === "string" ? (src["fact"] as string) : "";
+    const destination = typeof src["destination"] === "string" ? (src["destination"] as string) : "";
+    return { image, fact, destination };
+  });
   const destinations = fetchedDestinations || [];
+
+  // helper to normalize legacy/list objects that may have `.values` or be arrays
+  const normalizeToArray = (val: unknown): string[] => {
+    if (Array.isArray(val)) return val as string[];
+    if (val && typeof val === 'object' && (val as any).values && Array.isArray((val as any).values)) return (val as any).values as string[];
+    return [];
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -380,10 +393,8 @@ return (
                }}
              >
                 {destinations.map((option, idx: number) => {
-                  const highlights: string[] = Array.isArray((option as any).highlights)
-                    ? (option as any).highlights
-                    : ((option as any).highlights?.values || []);
-                  const galleryUrls: string[] = ((option as any).gallery || []).map((g) => (g as any).imageUrl);
+                  const highlights: string[] = normalizeToArray((option as any).highlights || []);
+                  const galleryUrls: string[] = Array.isArray((option as any).gallery) ? (option as any).gallery as string[] : [];
                   return (
                  <motion.div
                    key={option.id}
@@ -409,17 +420,17 @@ return (
                        whileHover={{ scale: 1.1 }}
                        transition={{ duration: 0.6 }}
                      >
-                          {imageError[option.imageUrl] ? (
+                          {imageError[option.image] ? (
                          <ImageFallback className="w-full h-full" />
                        ) : (
                          <Image
-                              src={option.imageUrl}
+                              src={option.image}
                            alt={option.name}
                            fill
                            className="object-cover group-hover:scale-110 transition-transform duration-700 cursor-zoom-in"
                            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
                            loading="lazy"
-                              onError={() => setImageError(prev => ({ ...prev, [option.imageUrl]: true }))}
+                              onError={() => setImageError(prev => ({ ...prev, [option.image]: true }))}
                          />
                        )}
                      </motion.div>
@@ -518,16 +529,16 @@ return (
               </motion.button>
               {/* Banner */}
               <div className="relative h-56 md:h-80 w-full overflow-hidden rounded-t-3xl">
-                  {imageError[selectedDestination.imageUrl] ? (
+                  {imageError[selectedDestination.image] ? (
                   <ImageFallback className="w-full h-full" />
                 ) : (
                   <Image
-                      src={selectedDestination.imageUrl}
+                      src={selectedDestination.image}
                     alt={selectedDestination.name}
                     fill
                     className="object-cover object-center blur-sm scale-105"
                     sizes="100vw"
-                      onError={() => setImageError(prev => ({ ...prev, [selectedDestination.imageUrl]: true }))}
+                      onError={() => setImageError(prev => ({ ...prev, [selectedDestination.image]: true }))}
                   />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1679b1]/80 via-[#1679b1]/40 to-transparent" />
@@ -565,7 +576,7 @@ return (
                   <p className="text-gray-700 mb-8 text-lg font-light leading-relaxed">{selectedDestination.description}</p>
                   {selectedDestination.highlights && (
                     <ul className="flex flex-wrap gap-3 mb-8">
-                        {(Array.isArray(selectedDestination.highlights) ? selectedDestination.highlights : (selectedDestination.highlights?.values || [])).map((h: string, i: number) => (
+                        {normalizeToArray(selectedDestination.highlights || []).map((h: string, i: number) => (
                         <motion.li 
                           key={i} 
                           className="bg-gradient-to-r from-[#1679b1]/20 to-[#f05b2d]/20 text-[#1679b1] text-base font-medium px-5 py-3 rounded-full border border-[#1679b1]/30 backdrop-blur-sm shadow-sm"
@@ -580,7 +591,7 @@ return (
                   )}
                   <h4 className="text-2xl font-bold bg-gradient-to-r from-[#1679b1] to-[#f05b2d] bg-clip-text text-transparent mb-6">Itinerary</h4>
                   <div className="space-y-6">
-                      {(selectedDestination.itineraries || []).map((itinerary: any, idx: number) => (
+                      {(selectedDestination.itineraries || []).map((itinerary: CountryItinerary, idx: number) => (
                       <motion.div 
                         key={itinerary.id} 
                         className="border border-white/30 rounded-2xl p-6 bg-white/50 backdrop-blur-sm shadow-lg"
@@ -591,7 +602,7 @@ return (
                         <h5 className="text-xl font-bold text-[#1679b1] mb-4">{itinerary.name}</h5>
                         <p className="text-gray-600 mb-4">{itinerary.description}</p>
                         <ul className="space-y-3 mb-4">
-                            {(itinerary.days || []).map((day: any, activityIdx: number) => (
+                            {(itinerary.days || []).map((day: ItineraryDay, activityIdx: number) => (
                             <motion.li 
                               key={activityIdx} 
                               className="flex items-start text-gray-700"
@@ -600,7 +611,7 @@ return (
                               transition={{ delay: 1.6 + activityIdx * 0.1, duration: 0.4 }}
                             >
                               <svg className="h-5 w-5 text-[#1679b1] mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                <span className="font-medium">{(Array.isArray(day.activities) ? day.activities : (day.activities?.values || []))[0]}</span>
+                                <span className="font-medium">{(Array.isArray(day.activities) ? day.activities : (day.activities as any)?.values || [])[0]}</span>
                             </motion.li>
                           ))}
                         </ul>
@@ -620,7 +631,7 @@ return (
                         </div>
                         {itinerary.highlights && (
                           <ul className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
-                              {(Array.isArray(itinerary.highlights) ? itinerary.highlights : (itinerary.highlights?.values || [])).map((h: string, i: number) => (
+                              {normalizeToArray(itinerary.highlights || []).map((h: string, i: number) => (
                               <motion.li 
                                 key={i} 
                                 className="bg-blue-50 text-blue-600 text-xs sm:text-sm font-medium px-2 sm:px-4 py-1 sm:py-2 rounded-full border border-blue-200"

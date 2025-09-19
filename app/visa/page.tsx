@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FaSearch, FaFilter, FaCheckCircle, FaClock, FaFileAlt, FaGlobe } from "react-icons/fa";
-import { useRouter } from "next/navigation";
+// removed unused useRouter import
 import Image from "next/image";
 
 interface VisaService {
@@ -22,7 +22,7 @@ interface VisaService {
 }
 
 const VisaPage = () => {
-  const router = useRouter();
+  // router not used here; removed
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedCountry, setSelectedCountry] = useState("all");
