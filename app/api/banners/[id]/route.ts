@@ -1,25 +1,27 @@
 import { NextResponse } from "next/server";
 import prisma from "../../../lib/prisma";
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const id = Number(params.id);  // Parsing id to number
-  const body = await req.json(); // Parsing the request body
+// Allow flexible context param coming from Next's route handler runtime.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function PUT(req: Request, context: any) {
+  const params = context?.params as { id: string } | undefined;
+  const id = Number(params?.id);
+  const body = await req.json();
   const { imageUrl, fact, destination, position } = body;
 
-  // Updating the banner slide
   const updated = await prisma.bannerSlide.update({
     where: { id },
     data: { imageUrl, fact, destination, position },
   });
 
-  return NextResponse.json(updated);  // Returning updated data
+  return NextResponse.json(updated);
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  const id = Number(params.id);  // Parsing id to number
-  await prisma.bannerSlide.delete({
-    where: { id },
-  });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function DELETE(req: Request, context: any) {
+  const params = context?.params as { id: string } | undefined;
+  const id = Number(params?.id);
+  await prisma.bannerSlide.delete({ where: { id } });
 
-  return NextResponse.json({ ok: true });  // Returning success response
+  return NextResponse.json({ ok: true });
 }
