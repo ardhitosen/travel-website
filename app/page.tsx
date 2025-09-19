@@ -49,13 +49,13 @@ const TravelApp = () => {
 
   const [currentSlide, setCurrentSlide] = useState(0);
 const [showItinerary, setShowItinerary] = useState(false);
-  const [selectedDestination, setSelectedDestination] = useState<TravelOption | null>(null);
+  const [selectedDestination] = useState<TravelOption | null>(null);
 const [galleryOpen, setGalleryOpen] = useState(false);
 const [galleryImages, setGalleryImages] = useState<string[]>([]);
 const [galleryIndex, setGalleryIndex] = useState(0);
-const [scrollY, setScrollY] = useState(0);
-const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-const [isVideoLoading, setIsVideoLoading] = useState(true);
+const [scrollY] = useState(0);
+const [isVideoPlaying] = useState(false);
+const [isVideoLoading] = useState(true);
 const [imageError, setImageError] = useState<{[key: string]: boolean}>({});
 const router = useRouter();
   const [fetchedBanners, setFetchedBanners] = useState<Record<string, unknown>[] | null>(null);
@@ -76,7 +76,10 @@ const router = useRouter();
   // helper to normalize legacy/list objects that may have `.values` or be arrays
   const normalizeToArray = (val: unknown): string[] => {
     if (Array.isArray(val)) return val as string[];
-    if (val && typeof val === 'object' && (val as any).values && Array.isArray((val as any).values)) return (val as any).values as string[];
+    if (val && typeof val === 'object') {
+      const v = val as { values?: unknown };
+      if (Array.isArray(v.values)) return v.values as string[];
+    }
     return [];
   };
 
@@ -392,9 +395,9 @@ return (
                  } 
                }}
              >
-                {destinations.map((option, idx: number) => {
-                  const highlights: string[] = normalizeToArray((option as any).highlights || []);
-                  const galleryUrls: string[] = Array.isArray((option as any).gallery) ? (option as any).gallery as string[] : [];
+            {destinations.map((option, idx: number) => {
+              const highlights: string[] = normalizeToArray(option.highlights || []);
+              const galleryUrls: string[] = Array.isArray(option.gallery) ? option.gallery : [];
                   return (
                  <motion.div
                    key={option.id}
@@ -602,18 +605,21 @@ return (
                         <h5 className="text-xl font-bold text-[#1679b1] mb-4">{itinerary.name}</h5>
                         <p className="text-gray-600 mb-4">{itinerary.description}</p>
                         <ul className="space-y-3 mb-4">
-                            {(itinerary.days || []).map((day: ItineraryDay, activityIdx: number) => (
-                            <motion.li 
-                              key={activityIdx} 
-                              className="flex items-start text-gray-700"
-                              initial={{ x: -20, opacity: 0 }}
-                              animate={{ x: 0, opacity: 1 }}
-                              transition={{ delay: 1.6 + activityIdx * 0.1, duration: 0.4 }}
-                            >
-                              <svg className="h-5 w-5 text-[#1679b1] mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                <span className="font-medium">{(Array.isArray(day.activities) ? day.activities : (day.activities as any)?.values || [])[0]}</span>
-                            </motion.li>
-                          ))}
+                            {(itinerary.days || []).map((day: ItineraryDay, activityIdx: number) => {
+                              const activities: string[] = Array.isArray(day.activities) ? day.activities : normalizeToArray(day.activities as unknown);
+                              return (
+                                <motion.li 
+                                  key={activityIdx} 
+                                  className="flex items-start text-gray-700"
+                                  initial={{ x: -20, opacity: 0 }}
+                                  animate={{ x: 0, opacity: 1 }}
+                                  transition={{ delay: 1.6 + activityIdx * 0.1, duration: 0.4 }}
+                                >
+                                  <svg className="h-5 w-5 text-[#1679b1] mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                  <span className="font-medium">{activities[0] || ''}</span>
+                                </motion.li>
+                              );
+                            })}
                         </ul>
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4">
                           <div className="flex-1">

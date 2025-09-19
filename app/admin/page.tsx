@@ -87,16 +87,20 @@ const AdminPage = () => {
       <section>
         <h2 className="text-2xl font-semibold mb-4">Destinations</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {destinations.map((d) => (
-            <div key={(d as any).id} className="p-4 border rounded-lg">
-              <div className="flex items-center gap-3 mb-3">
-                <img src={(d as any).imageUrl} alt={(d as any).name} className="w-20 h-14 object-cover rounded" />
-                <div className="font-semibold">{(d as any).name}</div>
+          {destinations.map((d) => {
+            const dest = d as { id?: string | number; imageUrl?: string; name?: string; description?: string; highlights?: unknown };
+            const highlights = Array.isArray(dest.highlights) ? dest.highlights : (dest.highlights && (dest.highlights as any).values) || [];
+            return (
+              <div key={dest.id} className="p-4 border rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <img src={dest.imageUrl} alt={dest.name} className="w-20 h-14 object-cover rounded" />
+                  <div className="font-semibold">{dest.name}</div>
+                </div>
+                <div className="text-sm text-gray-600 mb-2">{dest.description}</div>
+                <div className="text-sm">Highlights: {(Array.isArray(highlights) ? highlights : []).join(", ")}</div>
               </div>
-              <div className="text-sm text-gray-600 mb-2">{(d as any).description}</div>
-              <div className="text-sm">Highlights: {(Array.isArray((d as any).highlights) ? (d as any).highlights : ((d as any).highlights?.values || [])).join(", ")}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>

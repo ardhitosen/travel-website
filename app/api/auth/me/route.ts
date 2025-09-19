@@ -9,8 +9,13 @@ export async function GET(req: Request) {
     const token = tokenPair.replace('token=', '');
     const secret = process.env.JWT_SECRET as string;
     if (!secret) return NextResponse.json({ ok: false }, { status: 500 });
-    const payload = jwt.verify(token, secret) as any;
-    return NextResponse.json({ ok: true, user: { id: payload.sub, role: payload.role } });
+    const payload = jwt.verify(token, secret) as unknown;
+    if (typeof payload === 'object' && payload !== null && 'sub' in payload) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const p = payload as { sub?: string | number; role?: string };
+      return NextResponse.json({ ok: true, user: { id: p.sub, role: p.role } });
+    }
+    return NextResponse.json({ ok: false }, { status: 401 });
   } catch (err) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }

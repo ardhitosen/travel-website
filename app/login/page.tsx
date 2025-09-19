@@ -27,9 +27,13 @@ const LoginPage = () => {
       }
       router.replace("/admin");
     } catch (err) {
-      const e = err as unknown;
-      const msg = typeof e === 'object' && e !== null && 'message' in e ? (e as any).message : undefined;
-      setError((msg as string) || "Login failed");
+      const ex = err as unknown;
+      let msg: string | undefined;
+      if (typeof ex === 'object' && ex !== null && 'message' in ex) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        msg = (ex as { message?: unknown }).message as string | undefined;
+      }
+      setError(msg || "Login failed");
     } finally {
       setLoading(false);
     }
