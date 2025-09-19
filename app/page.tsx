@@ -90,7 +90,7 @@ const router = useRouter();
         ]);
         if (Array.isArray(b)) setFetchedBanners(b);
         if (Array.isArray(d)) setFetchedDestinations(d);
-      } catch (_e) {
+      } catch {
         // ignore
       }
     };

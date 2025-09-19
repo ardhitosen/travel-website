@@ -11,11 +11,11 @@ export async function GET(req: Request) {
     if (!secret) return NextResponse.json({ ok: false }, { status: 500 });
     const payload = jwt.verify(token, secret) as unknown;
     if (typeof payload === 'object' && payload !== null && 'sub' in payload) {
-        const p = payload as { sub?: string | number; role?: string };
+      const p = payload as { sub?: string | number; role?: string };
       return NextResponse.json({ ok: true, user: { id: p.sub, role: p.role } });
     }
     return NextResponse.json({ ok: false }, { status: 401 });
-  } catch (_err) {
+  } catch {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 }

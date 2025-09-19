@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from 'next/image';
 
 type Banner = { id?: number | string; imageUrl?: string; fact?: string; destination?: string };
 type Destination = {
@@ -25,8 +26,9 @@ const AdminPage = () => {
         if (!res.ok) return router.replace('/login');
         const j = await res.json().catch(() => ({}));
         if (!j.ok) return router.replace('/login');
-      } catch (_e) {
-        // ignore network/auth errors and redirect to login
+      } catch (e) {
+        // Log the error if necessary
+        console.error('Network or auth error:', e);
         router.replace('/login');
       }
     };
@@ -80,8 +82,9 @@ const AdminPage = () => {
     try {
       const maybe = h as { values?: unknown };
       if (Array.isArray(maybe.values)) return maybe.values.map(String);
-    } catch (_err) {
-      // fallthrough
+    } catch (err) {
+      // Log the error if necessary
+      console.error('Error normalizing highlights:', err);
     }
     return [];
   };
@@ -97,7 +100,13 @@ const AdminPage = () => {
         <ul className="mt-4 space-y-3">
           {banners.map((b) => (
             <li key={b.id} className="p-4 border rounded-lg flex items-center gap-4">
-              <img src={b.imageUrl} alt="banner" className="w-24 h-16 object-cover rounded" />
+              <Image 
+                src={b.imageUrl || '/fallback.jpg'} // Add a fallback image if needed
+                alt="banner"
+                width={96} // Specify width
+                height={64} // Specify height
+                className="object-cover rounded"
+              />
               <div className="flex-1">
                 <div className="font-medium">{b.destination}</div>
                 <div className="text-sm text-gray-600">{b.fact}</div>
@@ -117,7 +126,13 @@ const AdminPage = () => {
             return (
               <div key={dest.id} className="p-4 border rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
-                  <img src={dest.imageUrl} alt={dest.name} className="w-20 h-14 object-cover rounded" />
+                  <Image
+                    src={dest.imageUrl || '/fallback.jpg'} // Add a fallback image if needed
+                    alt={dest.name || 'Destination image'}
+                    width={80}
+                    height={56}
+                    className="object-cover rounded"
+                  />
                   <div className="font-semibold">{dest.name}</div>
                 </div>
                 <div className="text-sm text-gray-600 mb-2">{dest.description}</div>
@@ -163,4 +178,4 @@ const BannerForm = ({ onSubmit }: { onSubmit: (file: File, fact: string, destina
   );
 };
 
-export default AdminPage; 
+export default AdminPage;
