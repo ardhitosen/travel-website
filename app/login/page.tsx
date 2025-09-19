@@ -26,8 +26,10 @@ const LoginPage = () => {
         throw new Error(j.error || "Login failed");
       }
       router.replace("/admin");
-    } catch (e: any) {
-      setError(e.message || "Login failed");
+    } catch (err) {
+      const e = err as unknown;
+      const msg = typeof e === 'object' && e !== null && 'message' in e ? (e as any).message : undefined;
+      setError((msg as string) || "Login failed");
     } finally {
       setLoading(false);
     }

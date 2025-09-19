@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const AdminPage = () => {
-  const [banners, setBanners] = useState<any[]>([]);
-  const [destinations, setDestinations] = useState<any[]>([]);
+  const [banners, setBanners] = useState<Array<Record<string, any>>>([]);
+  const [destinations, setDestinations] = useState<Array<Record<string, any>>>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -71,7 +71,7 @@ const AdminPage = () => {
         <h2 className="text-2xl font-semibold mb-4">Banners</h2>
         <BannerForm onSubmit={addBanner} />
         <ul className="mt-4 space-y-3">
-          {banners.map(b => (
+          {banners.map((b) => (
             <li key={b.id} className="p-4 border rounded-lg flex items-center gap-4">
               <img src={b.imageUrl} alt="banner" className="w-24 h-16 object-cover rounded" />
               <div className="flex-1">
@@ -87,14 +87,14 @@ const AdminPage = () => {
       <section>
         <h2 className="text-2xl font-semibold mb-4">Destinations</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {destinations.map((d: any) => (
-            <div key={d.id} className="p-4 border rounded-lg">
+          {destinations.map((d) => (
+            <div key={(d as any).id} className="p-4 border rounded-lg">
               <div className="flex items-center gap-3 mb-3">
-                <img src={d.imageUrl} alt={d.name} className="w-20 h-14 object-cover rounded" />
-                <div className="font-semibold">{d.name}</div>
+                <img src={(d as any).imageUrl} alt={(d as any).name} className="w-20 h-14 object-cover rounded" />
+                <div className="font-semibold">{(d as any).name}</div>
               </div>
-              <div className="text-sm text-gray-600 mb-2">{d.description}</div>
-              <div className="text-sm">Highlights: {(Array.isArray(d.highlights) ? d.highlights : (d.highlights?.values || [])).join(", ")}</div>
+              <div className="text-sm text-gray-600 mb-2">{(d as any).description}</div>
+              <div className="text-sm">Highlights: {(Array.isArray((d as any).highlights) ? (d as any).highlights : ((d as any).highlights?.values || [])).join(", ")}</div>
             </div>
           ))}
         </div>

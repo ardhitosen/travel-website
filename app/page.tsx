@@ -57,7 +57,6 @@ const [scrollY, setScrollY] = useState(0);
 const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 const [isVideoLoading, setIsVideoLoading] = useState(true);
 const [imageError, setImageError] = useState<{[key: string]: boolean}>({});
-const [videoError, setVideoError] = useState(false);
 const router = useRouter();
   const [fetchedBanners, setFetchedBanners] = useState<any[] | null>(null);
   const [fetchedDestinations, setFetchedDestinations] = useState<any[] | null>(null);
@@ -65,7 +64,7 @@ const router = useRouter();
   const [selectedPromoImage, setSelectedPromoImage] = useState<string>("");
 
   // Derived data from backend
-  const bannerSlides = (fetchedBanners || []).map((s: any) => ({ image: s.imageUrl, fact: s.fact, destination: s.destination }));
+  const bannerSlides = (fetchedBanners || []).map((s) => ({ image: (s as any).imageUrl, fact: (s as any).fact, destination: (s as any).destination }));
   const destinations = fetchedDestinations || [];
 
   useEffect(() => {
@@ -82,8 +81,8 @@ const router = useRouter();
     load();
   }, []);
 
-  const handleBookTrip = (destination: any) => {
-const message = `Hello, I want to book a trip to ${destination.name}.`;
+  const handleBookTrip = (destination: { name?: string }) => {
+    const message = `Hello, I want to book a trip to ${destination.name || 'your selection'}.`;
 const whatsappUrl = `https://wa.me/6281553548899?text=${encodeURIComponent(message)}`;
 window.open(whatsappUrl, "_blank");
 };
@@ -380,11 +379,11 @@ return (
                  } 
                }}
              >
-                {destinations.map((option: any, idx: number) => {
-                  const highlights: string[] = Array.isArray(option.highlights)
-                    ? option.highlights
-                    : (option.highlights?.values || []);
-                  const galleryUrls: string[] = (option.gallery || []).map((g: any) => g.imageUrl);
+                {destinations.map((option, idx: number) => {
+                  const highlights: string[] = Array.isArray((option as any).highlights)
+                    ? (option as any).highlights
+                    : ((option as any).highlights?.values || []);
+                  const galleryUrls: string[] = ((option as any).gallery || []).map((g) => (g as any).imageUrl);
                   return (
                  <motion.div
                    key={option.id}
