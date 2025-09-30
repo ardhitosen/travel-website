@@ -47,7 +47,7 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
           const res = await fetch(`/api/destinations/${encodeURIComponent(param)}`);
           if (!res.ok) return null;
           return await res.json();
-        } catch (e) { return null; }
+        } catch { return null; }
       };
 
       let dest = await tryFetch(countryName);
@@ -69,19 +69,22 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
       const cityParam = cityParamRaw.toLowerCase();
 
       // Debug: log available itineraries to assist diagnosing mismatches
-      // eslint-disable-next-line no-console
-      console.debug('Available itineraries for destination:', itineraries.map((it: any) => ({ id: it.id, slug: it.slug, city: it.city })));
+      console.debug('Available itineraries for destination:', itineraries.map((it: unknown) => {
+        const item = it as Record<string, unknown>;
+        return { id: item.id, slug: item.slug, city: item.city };
+      }));
 
       // Match by slug (case-insensitive), numeric id, or normalized city name
       const normalize = (s: string) => s.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-      const match = itineraries.find((it: any) => {
-        const slug = (it.slug || '').toString().toLowerCase();
-        const idStr = it.id !== undefined && it.id !== null ? String(it.id).toLowerCase() : '';
-        const city = (it.city || '').toString().toLowerCase();
+      const match = itineraries.find((it: unknown) => {
+        const item = it as Record<string, unknown>;
+        const slug = String(item.slug || '').toLowerCase();
+        const idStr = item.id !== undefined && item.id !== null ? String(item.id).toLowerCase() : '';
+        const city = String(item.city || '').toLowerCase();
 
         if (slug && slug === cityParam) return true;
         if (idStr && (idStr === cityParam || idStr === cityParamRaw)) return true;
-        if (!Number.isNaN(Number(cityParam)) && Number(it.id) === Number(cityParam)) return true;
+        if (!Number.isNaN(Number(cityParam)) && Number(item.id as unknown as number) === Number(cityParam)) return true;
         if (normalize(city) === normalize(cityParam)) return true;
         return false;
       });
@@ -92,8 +95,16 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
         return;
       }
 
-      const days = Array.isArray(match.days) ? match.days.map((d: any) => ({ day: d.dayNumber ?? d.day ?? 0, activities: Array.isArray(d.activities) ? d.activities : [] })) : [];
-      const highlights = match.highlights && Array.isArray(match.highlights) ? match.highlights : (typeof match.highlights === 'string' ? match.highlights.split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+      const days = Array.isArray(match.days) ? match.days.map((d: unknown) => {
+        const dd = d as Record<string, unknown>;
+        const dayNum = (dd.dayNumber ?? dd.day ?? 0) as number | undefined;
+        const activities = Array.isArray(dd.activities) ? (dd.activities as unknown[]).map(String) : [];
+        return { day: Number(dayNum || 0), activities };
+      }) : [];
+
+      const highlights = match.highlights && Array.isArray(match.highlights)
+        ? (match.highlights as unknown[]).map(String)
+        : (typeof match.highlights === 'string' ? match.highlights.split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
 
       setItineraryData({
         id: match.slug || String(match.id),
