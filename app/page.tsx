@@ -58,6 +58,7 @@ const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [fetchedBanners, setFetchedBanners] = useState<Record<string, unknown>[] | null>(null);
   const [fetchedDestinations, setFetchedDestinations] = useState<TravelOption[] | null>(null);
+  const [fetchedPromotions, setFetchedPromotions] = useState<Record<string, any>[] | null>(null);
   const [promoModalOpen, setPromoModalOpen] = useState(false);
   const [selectedPromoImage, setSelectedPromoImage] = useState<string>("");
 
@@ -69,7 +70,35 @@ const router = useRouter();
     const destination = typeof src["destination"] === "string" ? (src["destination"] as string) : "";
     return { image, fact, destination };
   });
-  const destinations = fetchedDestinations || [];
+  const destinations: TravelOption[] = (fetchedDestinations || []).map((d: any) => ({
+    // some backends use `imageUrl`, some use `image` — normalize to `image`
+    ...d,
+    image: d.image || d.imageUrl || ''
+  }));
+
+  // Build promo items from the Promotion table (via /api/promotions), limit to 2.
+  // Fall back to static promos if none available.
+  const promoItems = (fetchedPromotions && fetchedPromotions.length)
+    ? fetchedPromotions.slice(0, 2).map((p, i) => {
+        const img = (p.imageUrl || p.image || '') as string;
+        const title = (p.title && String(p.title).length) ? String(p.title) : (p.fact && String(p.fact).length ? String(p.fact) : (p.destination || `Promotion ${i + 1}`));
+        const description = (p.description || p.destination || '') as string;
+        return { id: p.id ?? `cms-${i}`, image: img, title, description, destination: p.destination || undefined };
+      })
+    : [
+      {
+        id: 1,
+        image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1000&auto=format&fit=crop",
+        title: "Summer Escape",
+        description: "Up to 30% off on summer destinations"
+      },
+      {
+        id: 2,
+        image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1000&auto=format&fit=crop",
+        title: "Family Packages",
+        description: "Special rates for family vacations"
+      }
+    ];
 
   // helper to normalize legacy/list objects that may have `.values` or be arrays
   const normalizeToArray = (val: unknown): string[] => {
@@ -84,12 +113,15 @@ const router = useRouter();
   useEffect(() => {
     const load = async () => {
       try {
-        const [b, d] = await Promise.all([
-          fetch('/api/banners').then(r => r.ok ? r.json() : []),
-          fetch('/api/destinations').then(r => r.ok ? r.json() : [])
-        ]);
+          const [b, d, p] = await Promise.all([
+            fetch('/api/banners').then(r => r.ok ? r.json() : []),
+            fetch('/api/destinations').then(r => r.ok ? r.json() : []),
+            fetch('/api/promotions').then(r => r.ok ? r.json() : [])
+          ]);
         if (Array.isArray(b)) setFetchedBanners(b);
         if (Array.isArray(d)) setFetchedDestinations(d);
+        // promotions should come from the Promotion table via the promotions API
+        if (Array.isArray(p)) setFetchedPromotions(p);
       } catch {
         // ignore
       }
@@ -215,8 +247,9 @@ return (
               transition={{ delay: 0.1, duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <span className="inline-block text-blue-600 font-extrabold text-3xl sm:text-5xl md:text-7xl lg:text-8xl px-8 sm:px-12 py-4 sm:py-8 md:py-10 lg:py-2 tracking-wide">
-                Welcome to Jalan Overseas
+              <span className="inline-block font-extrabold text-4xl sm:text-5xl md:text-7xl lg:text-8xl px-8 sm:px-12 py-4 sm:py-8 md:py-10 lg:py-2 tracking-wide">
+                <span className="block md:inline text-[#e0663e]">Welcome To</span>
+                <span className="block md:inline md:ml-6 text-[#3b76ad]">Jalan Overseas</span>
               </span>
             </motion.div>
           </div>
@@ -239,8 +272,7 @@ return (
                 transition={{ delay: 0.6, duration: 0.8 }}
                 viewport={{ once: true }}
               >
-                Experience the world like never before with our carefully curated travel packages. 
-                From bustling cities to serene landscapes, we bring you the best destinations across Asia.
+               Eyes to see the World<br/>Your Trusted Partner for Overseas Travel
               </motion.p>
             </motion.div>
 
@@ -261,26 +293,26 @@ return (
              >
                {[
                  {
-                   icon: "📋",
                    title: "Visa",
                    description: "Check available visa requirements and applications.",
                   action: () => router.push('/visa'),
-                   color: "from-blue-600 to-blue-700"
+                  icon: null,
+                   color: "from-[#3b76ad] to-blue-500"
                  },
                  {
-                   icon: "🏨",
                    title: "Hotels",
                    description: "Discover and reserve premium accommodations worldwide.",
                   // Open WhatsApp for hotels inquiries
                   action: () => handleBookTrip({ name: 'Hotels' }),
+                  icon: null,
                    color: "from-purple-600 to-purple-700"
                  },
                  {
-                   icon: "📝",
                    title: "Custom Order",
                    description: "Request a tailored itinerary — we design a package just for you.",
                   // Open WhatsApp for custom order requests
                   action: () => handleBookTrip({ name: 'Custom Order' }),
+                  icon: null,
                    color: "from-yellow-500 to-orange-500"
                  }
                ].map((button, index) => (
@@ -331,20 +363,7 @@ return (
                  Special Promotions
                </motion.h3>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
-                 {[
-                   {
-                     id: 1,
-                     image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1000&auto=format&fit=crop",
-                     title: "Summer Escape",
-                     description: "Up to 30% off on summer destinations"
-                   },
-                   {
-                     id: 2,
-                     image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1000&auto=format&fit=crop",
-                     title: "Family Packages",
-                     description: "Special rates for family vacations"
-                   }
-                 ].map((promo, idx) => (
+                 {promoItems.map((promo, idx) => (
                    <motion.div
                      key={promo.id}
                      className="group relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer"
@@ -353,7 +372,13 @@ return (
                      whileInView={{ opacity: 1, y: 0 }}
                      transition={{ duration: 0.6, delay: idx * 0.2 }}
                      viewport={{ once: true }}
-                     onClick={() => handleOpenPromoModal(promo.image)}
+                     onClick={() => {
+                       if ((promo as any).destination) {
+                         router.push(`/country/${encodeURIComponent(String((promo as any).destination).toLowerCase())}`);
+                       } else {
+                         handleOpenPromoModal(promo.image);
+                       }
+                     }}
                    >
                      <div className="relative h-48 sm:h-64 overflow-hidden">
                        {imageError[promo.image] ? (
@@ -448,7 +473,7 @@ return (
                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                    </div>
                    <div className="p-4 sm:p-8 flex flex-col flex-1 bg-white">
-                     <h3 className="text-xl sm:text-3xl md:text-4xl font-bold text-blue-600 mb-2 sm:mb-3">
+                     <h3 className="text-xl sm:text-3xl md:text-4xl font-bold text-[#3b76ad] mb-2 sm:mb-3">
                        {option.name}
                      </h3>
                      <p className="text-gray-600 mb-3 sm:mb-4 flex-1 text-base sm:text-xl md:text-2xl font-light">
@@ -459,7 +484,7 @@ return (
                             {highlights.map((h, i) => (
                            <motion.li 
                              key={i} 
-                             className="bg-blue-50 text-blue-600 text-xs sm:text-sm font-medium px-2 sm:px-4 py-1 sm:py-2 rounded-full border border-blue-200"
+                             className="bg-blue-50 text-[#3b76ad] text-xs sm:text-sm font-medium px-2 sm:px-4 py-1 sm:py-2 rounded-full border border-blue-200"
                              initial={{ opacity: 0, scale: 0.8 }}
                              whileInView={{ opacity: 1, scale: 1 }}
                              transition={{ delay: 0.2 + i * 0.1 }}
@@ -472,7 +497,7 @@ return (
                      )}
                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-auto flex-nowrap w-full">
                        <motion.button
-                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-base sm:text-lg md:text-xl transition-all min-w-0 whitespace-nowrap"
+                         className="bg-[#3b76ad] hover:bg-blue-700 text-white px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-base sm:text-lg md:text-xl transition-all min-w-0 whitespace-nowrap"
                          onClick={(e: React.MouseEvent) => {
                            e.stopPropagation();
                            router.push(`/country/${option.name.toLowerCase()}`);
@@ -486,7 +511,7 @@ return (
                          <span className="truncate text-xs sm:text-sm">Detail</span>
                        </motion.button>
                        <motion.button
-                         className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-sm sm:text-base md:text-lg transition-all bg-white min-w-0 whitespace-nowrap"
+                         className="border-2 border-[#3b76ad] text-[#3b76ad] hover:bg-blue-50 px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-sm sm:text-base md:text-lg transition-all bg-white min-w-0 whitespace-nowrap"
                          onClick={(e: React.MouseEvent) => {
                            e.stopPropagation();
                            handleBookTrip(option);

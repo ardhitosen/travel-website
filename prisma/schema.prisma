@@ -22,10 +22,22 @@ model BannerSlide {
   id           Int      @id @default(autoincrement())
   imageUrl     String
   fact         String
+  title        String?
+  description  String?
   destination  String
   position     Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model Promotion {
+  id          Int      @id @default(autoincrement())
+  imageUrl    String
+  title       String?
+  description String?
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Destination {
@@ -37,7 +49,6 @@ model Destination {
   badge        String?
   itineraries  Itinerary[]
   gallery      GalleryImage[]
-  visas        VisaType[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 }
@@ -83,11 +94,11 @@ model VisaType {
   duration        String        // e.g., "30 days", "90 days", "1 year"
   processingTime  String        // e.g., "3-5 business days", "2-4 weeks"
   price           String        // e.g., "$50", "$100"
+  imageUrl        String?
   requirements    Json          // Array of requirement strings
   documents       Json          // Array of required documents
   validity        String        // e.g., "Single entry", "Multiple entry"
-  destination     Destination   @relation(fields: [destinationId], references: [id])
-  destinationId   Int
+  destination     String
   applications    VisaApplication[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

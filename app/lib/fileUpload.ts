@@ -12,14 +12,15 @@ export interface UploadResult {
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || '10485760'); // 10MB default
 const ALLOWED_TYPES = (process.env.ALLOWED_FILE_TYPES || 'image/jpeg,image/png,image/gif,image/webp').split(',');
 
-function validateFile(file: File): string | null {
+function validateFile(file: { size?: number; type?: string } | undefined): string | null {
+  if (!file) return 'No file provided';
   // Check file size
-  if (file.size > MAX_FILE_SIZE) {
+  if ((file.size || 0) > MAX_FILE_SIZE) {
     return `File size too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`;
   }
 
   // Check file type
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (file.type && !ALLOWED_TYPES.includes(file.type)) {
     return `File type not allowed. Allowed types: ${ALLOWED_TYPES.join(', ')}`;
   }
 
@@ -27,7 +28,7 @@ function validateFile(file: File): string | null {
 }
 
 export async function uploadFile(
-  file: File,
+  file: any,
   folder: string = 'uploads'
 ): Promise<UploadResult> {
   try {
@@ -47,16 +48,27 @@ export async function uploadFile(
     // Generate unique filename
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
-    const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+    const origName = (file && file.name) || `${timestamp}`;
+    const fileExtension = String(origName).split('.').pop()?.toLowerCase() || 'jpg';
     const filename = `${timestamp}-${randomString}.${fileExtension}`;
     
     // Convert file to buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    let buffer: Buffer;
+    if (typeof file.arrayBuffer !== 'function') {
+      // Some runtimes provide Blob with stream() — try to handle Buffer directly
+      if (file instanceof Buffer) {
+        buffer = file as Buffer;
+      } else {
+        return { success: false, error: 'Uploaded file missing arrayBuffer method' };
+      }
+    } else {
+      const bytes = await file.arrayBuffer();
+      buffer = Buffer.from(bytes as ArrayBuffer);
+    }
 
     // Write file to disk
     const filepath = join(uploadsDir, filename);
-    await writeFile(filepath, buffer);
+    await writeFile(filepath, buffer as Buffer);
 
     // Return public URL
     const publicUrl = `/${folder}/${filename}`;

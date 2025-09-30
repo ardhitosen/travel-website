@@ -31,104 +31,96 @@ const CountryClient = ({ params }: CountryClientProps) => {
   const [scrollY, setScrollY] = useState(0);
   const countryName = params.country;
 
-  // Sample data - in real app this would come from API or database
-  const countryData = {
-    name: countryName ? countryName.charAt(0).toUpperCase() + countryName.slice(1) : "Loading...",
-    description: countryName ? `Discover the amazing destinations in ${countryName.charAt(0).toUpperCase() + countryName.slice(1)}.` : "Loading...",
-    image: "https://images.unsplash.com/photo-1570191913384-7b4ff11716e7?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    itineraries: [
-      {
-        id: "city1",
-        name: "City 1",
-        city: "City 1",
-        duration: "1 Week",
-        price: "$280",
-        image: "https://images.unsplash.com/photo-1570191913384-7b4ff11716e7?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        description: "Experience the vibrant city life.",
-        activities: [
-          {
-            day: 1,
-            activities: [
-              "Arrive in City",
-              "Visit local attractions",
-              "Explore the city center",
-              "Dinner at local restaurant",
-            ],
-          },
-          {
-            day: 2,
-            activities: [
-              "Visit famous landmarks",
-              "Lunch at popular spots",
-              "Shopping and sightseeing",
-              "Dinner with local cuisine",
-            ],
-          },
-        ],
-        highlights: ["Local Culture", "Modern City Life", "Street Food"],
-      },
-      {
-        id: "city2",
-        name: "City 2",
-        city: "City 2",
-        duration: "1 Week",
-        price: "$320",
-        image: "https://plus.unsplash.com/premium_photo-1661964177687-57387c2cbd14?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        description: "Discover the rich history and culture.",
-        activities: [
-          {
-            day: 1,
-            activities: [
-              "Arrive in City 2",
-              "Visit historical sites",
-              "Cultural experience",
-              "Traditional dinner",
-            ],
-          },
-          {
-            day: 2,
-            activities: [
-              "Explore museums",
-              "Local market visit",
-              "Cultural workshop",
-              "Authentic cuisine",
-            ],
-          },
-        ],
-        highlights: ["Historical Sites", "Cultural Experience", "Traditional Food"],
-      },
-      {
-        id: "city3",
-        name: "City 3",
-        city: "City 3",
-        duration: "1 Week",
-        price: "$350",
-        image: "https://images.unsplash.com/photo-1518684079-3c830dcef090?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        description: "Enjoy the beautiful landscapes and nature.",
-        activities: [
-          {
-            day: 1,
-            activities: [
-              "Arrive in City 3",
-              "Nature exploration",
-              "Scenic views",
-              "Outdoor activities",
-            ],
-          },
-          {
-            day: 2,
-            activities: [
-              "Hiking adventure",
-              "Wildlife watching",
-              "Nature photography",
-              "Camping experience",
-            ],
-          },
-        ],
-        highlights: ["Natural Beauty", "Adventure", "Wildlife"],
-      },
-    ] as CountryItinerary[],
-  };
+  const [countryData, setCountryData] = useState<{
+    name: string;
+    description?: string;
+    image?: string;
+    itineraries: CountryItinerary[];
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      if (!countryName) { setLoading(false); return; }
+      const tryFetch = async (param: string) => {
+        try {
+          const res = await fetch(`/api/destinations/${encodeURIComponent(param)}`);
+          if (!res.ok) return null;
+          const d = await res.json();
+          return d;
+        } catch (e) {
+          return null;
+        }
+      };
+
+      // Try raw param, then a few fallbacks (capitalized, hyphen -> space, title-case)
+      let dest = await tryFetch(countryName);
+      if (!dest) {
+        const cap = countryName.charAt(0).toUpperCase() + countryName.slice(1);
+        dest = await tryFetch(cap);
+      }
+
+      if (!dest) {
+        // replace hyphens with spaces (e.g. `south-korea` -> `south korea`)
+        const spaced = countryName.replace(/-/g, ' ');
+        if (spaced !== countryName) {
+          dest = await tryFetch(spaced);
+        }
+      }
+
+      if (!dest) {
+        // Title-case each word (e.g. `south korea` -> `South Korea`)
+        const spaced = countryName.replace(/-/g, ' ');
+        const title = spaced.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        if (title && title !== countryName) {
+          dest = await tryFetch(title);
+        }
+      }
+
+      if (!dest) {
+        setError('Destination not found');
+        setCountryData(null);
+        setLoading(false);
+        return;
+      }
+  // debug: log fetched destination shape (helps diagnose empty itineraries)
+  // eslint-disable-next-line no-console
+  console.debug('Fetched destination:', dest);
+  // helpful quick debug: how many itineraries were returned
+  // eslint-disable-next-line no-console
+  console.debug('Itineraries count:', Array.isArray(dest?.itineraries) ? dest.itineraries.length : (dest && dest.itineraries ? 1 : 0));
+
+  // Ensure we treat itineraries as an array even if the API returned a single object
+  const rawItineraries = Array.isArray(dest.itineraries) ? dest.itineraries : (dest.itineraries ? [dest.itineraries] : []);
+
+      // Normalize itineraries shape to CountryItinerary[] expected by UI
+  const its = (rawItineraries || []).map((it: any) => {
+        const days = Array.isArray(it.days) ? it.days.map((d: any) => ({ day: d.dayNumber ?? d.day ?? 0, activities: Array.isArray(d.activities) ? d.activities : [] })) : [];
+        const highlights = it.highlights && Array.isArray(it.highlights) ? it.highlights : (typeof it.highlights === 'string' ? it.highlights.split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+        const duration = it.duration ? it.duration : (Array.isArray(it.days) && it.days.length ? `${it.days.length} days` : '');
+        const price = it.price || '$0';
+        return {
+          id: it.slug || String(it.id),
+          name: it.name || it.title || it.slug || String(it.id),
+          city: it.city || it.name || it.slug || String(it.id),
+          duration,
+          price,
+          image: it.imageUrl || it.image || '',
+          description: it.description || it.title || '',
+          activities: days,
+          highlights,
+          slug: it.slug || undefined,
+        } as CountryItinerary;
+      });
+
+      setCountryData({ name: dest.name || countryName, description: dest.description || '', image: dest.imageUrl || '', itineraries: its });
+      setLoading(false);
+    };
+    load();
+  }, [countryName]);
 
   // Parallax scroll effect
   useEffect(() => {
@@ -143,8 +135,9 @@ const CountryClient = ({ params }: CountryClientProps) => {
   }, []);
 
   const handleBookTrip = (itinerary: CountryItinerary) => {
-    const message = `Hello, I want to book a trip to ${itinerary.city} in ${countryData.name}.`;
-  const whatsappUrl = `https://wa.me/6281553548899?text=${encodeURIComponent(message)}`;
+    const destName = countryData?.name || countryName;
+    const message = `Hello, I want to book a trip to ${itinerary.city} in ${destName}.`;
+    const whatsappUrl = `https://wa.me/6281553548899?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, "_blank");
   };
 
@@ -154,7 +147,8 @@ const CountryClient = ({ params }: CountryClientProps) => {
 
 
   const handleViewItinerary = (itinerary: CountryItinerary) => {
-    router.push(`/itinerary/${countryName}/${itinerary.id}`);
+    const idOrSlug = (itinerary as any).slug || itinerary.id;
+    router.push(`/itinerary/${countryName}/${encodeURIComponent(String(idOrSlug))}`);
   };
 
   return (
@@ -193,9 +187,10 @@ const CountryClient = ({ params }: CountryClientProps) => {
                   transform: `translateY(${scrollY * 0.5}px)`,
                 }}
               >
+                {/* Safe banner values */}
                 <Image
-                  src={countryData.image}
-                  alt={`${countryData.name} banner`}
+                  src={countryData?.image || '/file.svg'}
+                  alt={`${countryData?.name || countryName} banner`}
                   width={1200}
                   height={800}
                   className="w-full h-full object-cover"
@@ -218,7 +213,7 @@ const CountryClient = ({ params }: CountryClientProps) => {
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.5, duration: 1 }}
                 >
-                  {countryData.name}
+                  {countryData?.name || countryName}
                 </motion.h1>
                 
                 <motion.p
@@ -227,11 +222,21 @@ const CountryClient = ({ params }: CountryClientProps) => {
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.7, duration: 0.8 }}
                 >
-                  {countryData.description}
+                  {countryData?.description || ''}
                 </motion.p>
               </motion.div>
             </div>
           </section>
+
+          {/* Dev debug: show fetched countryData JSON when not in production */}
+          {process.env.NODE_ENV !== 'production' && countryData && (
+            <div className="max-w-6xl mx-auto px-4 mb-6">
+              <details className="bg-gray-100 p-4 rounded">
+                <summary className="cursor-pointer text-sm text-gray-700">Debug: countryData (click to expand)</summary>
+                <pre className="text-xs text-gray-700 overflow-auto mt-2">{JSON.stringify(countryData, null, 2)}</pre>
+              </details>
+            </div>
+          )}
 
           {/* Itineraries Section */}
           <section className="relative py-20 px-4 bg-white">
@@ -260,9 +265,14 @@ const CountryClient = ({ params }: CountryClientProps) => {
                   transition={{ delay: 0.4, duration: 0.8 }}
                   viewport={{ once: true }}
                 >
-                  Choose from our carefully curated itineraries to explore the best of {countryData.name}.
+                  Choose from our carefully curated itineraries to explore the best of {countryData?.name || countryName}.
                 </motion.p>
               </motion.div>
+
+              {/* No itineraries message */}
+              {(!loading && (!countryData || !countryData.itineraries || countryData.itineraries.length === 0)) && (
+                <div className="text-center text-gray-500 mt-8">No itineraries available for {countryData?.name || countryName}.</div>
+              )}
 
               {/* Itineraries Grid */}
               <motion.div
@@ -279,7 +289,7 @@ const CountryClient = ({ params }: CountryClientProps) => {
                   } 
                 }}
               >
-                {countryData.itineraries.map((itinerary) => (
+                {(countryData?.itineraries || []).map((itinerary) => (
                   <motion.div
                     key={itinerary.id}
                     className="group bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer flex flex-col border border-gray-200 overflow-hidden"
@@ -299,8 +309,8 @@ const CountryClient = ({ params }: CountryClientProps) => {
                         whileHover={{ scale: 1.1 }}
                         transition={{ duration: 0.6 }}
                       >
-                        <Image
-                          src={itinerary.image}
+                          <Image
+                          src={itinerary.image || '/file.svg'}
                           alt={itinerary.name}
                           width={400}
                           height={300}
@@ -310,10 +320,10 @@ const CountryClient = ({ params }: CountryClientProps) => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
                     <div className="p-4 sm:p-8 flex flex-col flex-1 bg-white">
-                      <h3 className="text-lg sm:text-2xl font-bold text-blue-600 mb-2 sm:mb-3">
+                          <h3 className="text-lg sm:text-2xl font-bold text-[#3b76ad] mb-2 sm:mb-3">
                         {itinerary.name}
                       </h3>
-                      <p className="text-gray-600 mb-3 sm:mb-4 flex-1 text-sm sm:text-lg font-light">
+                          <p className="text-gray-600 mb-3 sm:mb-4 flex-1 text-sm sm:text-lg font-light">
                         {itinerary.description}
                       </p>
                       {itinerary.highlights && (
@@ -321,7 +331,7 @@ const CountryClient = ({ params }: CountryClientProps) => {
                           {itinerary.highlights.map((h, i) => (
                             <motion.li 
                               key={i} 
-                              className="bg-blue-50 text-blue-600 text-xs sm:text-sm font-medium px-2 sm:px-4 py-1 sm:py-2 rounded-full border border-blue-200"
+                              className="bg-blue-50 text-[#3b76ad] text-xs sm:text-sm font-medium px-2 sm:px-4 py-1 sm:py-2 rounded-full border border-blue-200"
                               initial={{ opacity: 0, scale: 0.8 }}
                               whileInView={{ opacity: 1, scale: 1 }}
                               transition={{ delay: 0.2 + i * 0.1 }}
@@ -333,11 +343,13 @@ const CountryClient = ({ params }: CountryClientProps) => {
                         </ul>
                       )}
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-auto flex-nowrap w-full">
-                        <motion.button
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-sm sm:text-base md:text-lg transition-all min-w-0 whitespace-nowrap"
+                          <motion.button
+                          className="bg-[#3b76ad] hover:bg-blue-700 text-white px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-sm sm:text-base md:text-lg transition-all min-w-0 whitespace-nowrap"
                           onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
-                            handleViewItinerary(itinerary);
+                            // route using slug if available, otherwise city or id
+                            const slug = (itinerary as any).slug || itinerary.city || itinerary.id;
+                            handleViewItinerary({ ...itinerary, id: slug });
                           }}
                           aria-label={`View itinerary for ${itinerary.name}`}
                           whileHover={{ scale: 1.05 }}
@@ -348,7 +360,7 @@ const CountryClient = ({ params }: CountryClientProps) => {
                           <span className="truncate text-xs sm:text-sm">View</span>
                         </motion.button>
                         <motion.button
-                          className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-sm sm:text-base md:text-lg transition-all bg-white min-w-0 whitespace-nowrap"
+                          className="border-2 border-[#3b76ad] text-[#3b76ad]  hover:bg-blue-50 px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-sm sm:text-base md:text-lg transition-all bg-white min-w-0 whitespace-nowrap"
                           onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             handleBookTrip(itinerary);

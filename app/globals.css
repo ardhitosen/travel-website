@@ -2,9 +2,6 @@
 
 /* Register Mondstadt font - drop files in /public/fonts/Mondstadt */
 @font-face {
-  font-family: 'Mondstadt';
-  src: url('/fonts/Mondstadt.woff2') format('woff2'),
-       url('/fonts/Mondstadt.woff') format('woff');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;

@@ -1,0 +1,10 @@
+-- Migration: add Promotion table
+CREATE TABLE IF NOT EXISTS "Promotion" (
+  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+  "imageUrl" TEXT NOT NULL,
+  "title" TEXT,
+  "description" TEXT,
+  "position" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updatedAt" DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+);

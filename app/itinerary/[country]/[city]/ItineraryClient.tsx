@@ -30,38 +30,88 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
   const router = useRouter();
   const [scrollY, setScrollY] = useState(0);
   const cityName = params.city;
+  const countryName = params.country;
+  const [itineraryData, setItineraryData] = useState<CountryItinerary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample data - in real app this would come from API or database
-  const itineraryData: CountryItinerary = {
-    id: cityName,
-    name: cityName ? cityName.charAt(0).toUpperCase() + cityName.slice(1) : "Loading...",
-    city: cityName ? cityName.charAt(0).toUpperCase() + cityName.slice(1) : "Loading...",
-    duration: "1 Week",
-    price: "$280",
-    image: "https://images.unsplash.com/photo-1570191913384-7b4ff11716e7?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    description: cityName ? `Experience the vibrant city life of ${cityName.charAt(0).toUpperCase() + cityName.slice(1)}.` : "Loading...",
-    activities: [
-      {
-        day: 1,
-        activities: [
-          cityName ? `Arrive in ${cityName.charAt(0).toUpperCase() + cityName.slice(1)}` : "Arrive in city",
-          "Visit local attractions",
-          "Explore the city center",
-          "Dinner at local restaurant",
-        ],  
-      },
-      {
-        day: 2,
-        activities: [
-          "Visit famous landmarks",
-          "Lunch at popular spots",
-          "Shopping and sightseeing",
-          "Dinner with local cuisine",
-        ],
-      },
-    ],
-    highlights: ["Local Culture", "Modern City Life", "Street Food"],
-  };
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      if (!countryName || !cityName) { setLoading(false); return; }
+
+      // Try to load destination then find itinerary by slug or city or id
+      const tryFetch = async (param: string) => {
+        try {
+          const res = await fetch(`/api/destinations/${encodeURIComponent(param)}`);
+          if (!res.ok) return null;
+          return await res.json();
+        } catch (e) { return null; }
+      };
+
+      let dest = await tryFetch(countryName);
+      if (!dest) {
+        const cap = countryName.charAt(0).toUpperCase() + countryName.slice(1);
+        dest = await tryFetch(cap);
+      }
+
+      if (!dest) {
+        setError('Destination not found');
+        setItineraryData(null);
+        setLoading(false);
+        return;
+      }
+
+      const itineraries = Array.isArray(dest.itineraries) ? dest.itineraries : [];
+      // Normalize incoming param for robust matching
+      const cityParamRaw = decodeURIComponent(String(cityName || '')).trim();
+      const cityParam = cityParamRaw.toLowerCase();
+
+      // Debug: log available itineraries to assist diagnosing mismatches
+      // eslint-disable-next-line no-console
+      console.debug('Available itineraries for destination:', itineraries.map((it: any) => ({ id: it.id, slug: it.slug, city: it.city })));
+
+      // Match by slug (case-insensitive), numeric id, or normalized city name
+      const normalize = (s: string) => s.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+      const match = itineraries.find((it: any) => {
+        const slug = (it.slug || '').toString().toLowerCase();
+        const idStr = it.id !== undefined && it.id !== null ? String(it.id).toLowerCase() : '';
+        const city = (it.city || '').toString().toLowerCase();
+
+        if (slug && slug === cityParam) return true;
+        if (idStr && (idStr === cityParam || idStr === cityParamRaw)) return true;
+        if (!Number.isNaN(Number(cityParam)) && Number(it.id) === Number(cityParam)) return true;
+        if (normalize(city) === normalize(cityParam)) return true;
+        return false;
+      });
+      if (!match) {
+        setError('Itinerary not found');
+        setItineraryData(null);
+        setLoading(false);
+        return;
+      }
+
+      const days = Array.isArray(match.days) ? match.days.map((d: any) => ({ day: d.dayNumber ?? d.day ?? 0, activities: Array.isArray(d.activities) ? d.activities : [] })) : [];
+      const highlights = match.highlights && Array.isArray(match.highlights) ? match.highlights : (typeof match.highlights === 'string' ? match.highlights.split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+
+      setItineraryData({
+        id: match.slug || String(match.id),
+        name: match.name || match.title || match.slug || String(match.id),
+        city: match.city || match.name || match.slug || String(match.id),
+        duration: match.duration || (Array.isArray(days) ? `${days.length} days` : ''),
+        price: match.price || '$0',
+        image: match.imageUrl || match.image || '',
+        description: match.description || match.title || '',
+        activities: days,
+        highlights,
+      });
+
+      setLoading(false);
+    };
+
+    load();
+  }, [countryName, cityName]);
 
   // Parallax scroll effect
   useEffect(() => {
@@ -84,6 +134,32 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
   const handleBackToHome = () => {
     router.push('/');
   };
+  // Avoid rendering when data is not ready to prevent runtime errors
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center p-8">
+          <p className="text-xl font-medium text-gray-700">Loading itinerary…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !itineraryData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="text-center p-8">
+          <p className="text-xl font-medium text-gray-700 mb-4">{error || 'Itinerary not available'}</p>
+          <button
+            onClick={handleBackToHome}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+          >
+            Back to home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -122,7 +198,7 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
                 }}
               >
                 <Image
-                  src={itineraryData.image}
+                  src={itineraryData.image || '/file.svg'}
                   alt={`${itineraryData.city} banner`}
                   width={1200}
                   height={800}
@@ -234,7 +310,7 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
                     whileHover={{ y: -10, scale: 1.02 }}
                   >
                     <div className="text-6xl mb-6">{info.icon}</div>
-                    <h3 className="text-2xl font-bold text-blue-600 mb-4">{info.title}</h3>
+                    <h3 className="text-2xl font-bold text-[#3b76ad] mb-4">{info.title}</h3>
                     <p className="text-gray-600 text-lg leading-relaxed">{info.value}</p>
                   </motion.div>
                 ))}
@@ -259,7 +335,7 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
                     transition={{ delay: 0.8 + idx * 0.2, duration: 0.6 }}
                     viewport={{ once: true }}
                   >
-                    <h4 className="text-2xl font-bold text-blue-600 mb-6">Day {day.day}</h4>
+                    <h4 className="text-2xl font-bold text-[#3b76ad] mb-6">Day {day.day}</h4>
                     <ul className="space-y-4">
                       {day.activities.map((activity, activityIdx) => (
                         <motion.li 
@@ -270,7 +346,7 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
                           transition={{ delay: 1.0 + idx * 0.2 + activityIdx * 0.1, duration: 0.4 }}
                           viewport={{ once: true }}
                         >
-                          <svg className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="h-5 w-5 text-[#3b76ad] mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                           <span className="font-medium">{activity}</span>
@@ -295,7 +371,7 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
                     {itineraryData.highlights.map((highlight, i) => (
                       <motion.div 
                         key={i} 
-                        className="bg-blue-50 text-blue-600 text-lg font-medium px-6 py-3 rounded-full border border-blue-200"
+                        className="bg-blue-50 text-[#3b76ad] text-lg font-medium px-6 py-3 rounded-full border border-blue-200"
                         initial={{ opacity: 0, scale: 0.8 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 1.4 + i * 0.1 }}
