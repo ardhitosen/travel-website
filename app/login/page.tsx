@@ -30,8 +30,7 @@ const LoginPage = () => {
       const ex = err as unknown;
       let msg: string | undefined;
       if (typeof ex === 'object' && ex !== null && 'message' in ex) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        msg = (ex as { message?: unknown }).message as string | undefined;
+  msg = (ex as { message?: unknown }).message as string | undefined;
       }
       setError(msg || "Login failed");
     } finally {
