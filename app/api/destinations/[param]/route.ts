@@ -10,10 +10,14 @@ function isNumericId(param: string): boolean {
 
 type RouteContext = { params?: Promise<Record<string, unknown>> | Record<string, unknown> } | undefined;
 
+function isThenable<T = unknown>(obj: unknown): obj is Promise<T> {
+  return typeof obj === 'object' && obj !== null && typeof (obj as { then?: unknown }).then === 'function';
+}
+
 export async function GET(req: Request, context: RouteContext) {
   // `context.params` may be a thenable in some Next runtimes — handle both sync and async
   const rawParams = context?.params;
-  const params = rawParams && typeof (rawParams as any).then === 'function' ? await rawParams : rawParams;
+  const params = isThenable(rawParams) ? await rawParams : rawParams;
   const paramRaw = (params as Record<string, unknown> | undefined)?.param;
   const param = typeof paramRaw === 'string' ? paramRaw : String(paramRaw ?? '');
 
@@ -62,7 +66,7 @@ export async function GET(req: Request, context: RouteContext) {
 
 export async function PUT(req: Request, context: RouteContext) {
   const rawParams = context?.params;
-  const params = rawParams && typeof (rawParams as any).then === 'function' ? await rawParams : rawParams;
+  const params = isThenable(rawParams) ? await rawParams : rawParams;
   const paramRaw = (params as Record<string, unknown> | undefined)?.param;
   const param = typeof paramRaw === 'string' ? paramRaw : String(paramRaw ?? '');
   const data = await req.json();
@@ -86,7 +90,7 @@ export async function PUT(req: Request, context: RouteContext) {
 
 export async function DELETE(_: Request, context: RouteContext) {
   const rawParams = context?.params;
-  const params = rawParams && typeof (rawParams as any).then === 'function' ? await rawParams : rawParams;
+  const params = isThenable(rawParams) ? await rawParams : rawParams;
   const paramRaw = (params as Record<string, unknown> | undefined)?.param;
   const param = typeof paramRaw === 'string' ? paramRaw : String(paramRaw ?? '');
 
