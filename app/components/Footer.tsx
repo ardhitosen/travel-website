@@ -6,14 +6,14 @@ import { motion } from "framer-motion";
 const Footer: React.FC = () => {
   const year = new Date().getFullYear();
   return (
-    <footer className="mt-auto border-t border-gray-200 bg-white/80 backdrop-blur">
+  <footer className="mt-auto border-t border-gray-200 bg-white relative z-30 shadow-sm">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
           viewport={{ once: true }}
-          className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-600"
+          className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-700"
         >
           <div className="flex items-center gap-2">
             <span className="font-semibold text-gray-800">Jalan Overseas</span>
