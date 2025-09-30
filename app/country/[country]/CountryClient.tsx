@@ -87,32 +87,34 @@ const CountryClient = ({ params }: CountryClientProps) => {
         return;
       }
   // debug: log fetched destination shape (helps diagnose empty itineraries)
-  // eslint-disable-next-line no-console
   console.debug('Fetched destination:', dest);
   // helpful quick debug: how many itineraries were returned
-  // eslint-disable-next-line no-console
   console.debug('Itineraries count:', Array.isArray(dest?.itineraries) ? dest.itineraries.length : (dest && dest.itineraries ? 1 : 0));
 
   // Ensure we treat itineraries as an array even if the API returned a single object
   const rawItineraries = Array.isArray(dest.itineraries) ? dest.itineraries : (dest.itineraries ? [dest.itineraries] : []);
 
       // Normalize itineraries shape to CountryItinerary[] expected by UI
-  const its = (rawItineraries || []).map((it: any) => {
-        const days = Array.isArray(it.days) ? it.days.map((d: any) => ({ day: d.dayNumber ?? d.day ?? 0, activities: Array.isArray(d.activities) ? d.activities : [] })) : [];
-        const highlights = it.highlights && Array.isArray(it.highlights) ? it.highlights : (typeof it.highlights === 'string' ? it.highlights.split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
-        const duration = it.duration ? it.duration : (Array.isArray(it.days) && it.days.length ? `${it.days.length} days` : '');
-        const price = it.price || '$0';
+  const its = (rawItineraries || []).map((it: unknown) => {
+        const item = it as Record<string, unknown>;
+        const days = Array.isArray(item.days) ? (item.days as unknown[]).map((d: unknown) => {
+          const dd = d as Record<string, unknown>;
+          return { day: Number(dd.dayNumber ?? dd.day ?? 0), activities: Array.isArray(dd.activities) ? (dd.activities as unknown[]).map(String) : [] };
+        }) : [];
+        const highlights = item.highlights && Array.isArray(item.highlights) ? (item.highlights as unknown[]).map(String) : (typeof item.highlights === 'string' ? String(item.highlights).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+        const duration = (item.duration as string) ? (item.duration as string) : (Array.isArray(item.days) && (item.days as unknown[]).length ? `${(item.days as unknown[]).length} days` : '');
+        const price = (item.price as string) || '$0';
         return {
-          id: it.slug || String(it.id),
-          name: it.name || it.title || it.slug || String(it.id),
-          city: it.city || it.name || it.slug || String(it.id),
+          id: (item.slug as string) || String(item.id),
+          name: (item.name as string) || (item.title as string) || (item.slug as string) || String(item.id),
+          city: (item.city as string) || (item.name as string) || (item.slug as string) || String(item.id),
           duration,
           price,
-          image: it.imageUrl || it.image || '',
-          description: it.description || it.title || '',
+          image: (item.imageUrl as string) || (item.image as string) || '',
+          description: (item.description as string) || (item.title as string) || '',
           activities: days,
           highlights,
-          slug: it.slug || undefined,
+          slug: (item.slug as string) || undefined,
         } as CountryItinerary;
       });
 
@@ -147,7 +149,7 @@ const CountryClient = ({ params }: CountryClientProps) => {
 
 
   const handleViewItinerary = (itinerary: CountryItinerary) => {
-    const idOrSlug = (itinerary as any).slug || itinerary.id;
+    const idOrSlug = ((itinerary as unknown) as Record<string, unknown>).slug || itinerary.id;
     router.push(`/itinerary/${countryName}/${encodeURIComponent(String(idOrSlug))}`);
   };
 
