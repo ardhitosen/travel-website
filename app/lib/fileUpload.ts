@@ -1,5 +1,5 @@
 import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve } from 'path';
 
 export interface UploadResult {
   success: boolean;
@@ -11,6 +11,11 @@ export interface UploadResult {
 // Configuration from environment variables
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || '10485760'); // 10MB default
 const ALLOWED_TYPES = (process.env.ALLOWED_FILE_TYPES || 'image/jpeg,image/png,image/gif,image/webp').split(',');
+
+// Optional explicit upload root. If set, this should be an absolute path to the folder
+// where the app's public assets are served from (for example: /var/www/travel-website/public).
+// Fallback: join(process.cwd(), 'public') as before.
+const UPLOAD_ROOT = process.env.UPLOAD_DIR ? resolve(process.env.UPLOAD_DIR) : join(process.cwd(), 'public');
 
 type FileLike = {
   name?: string;
@@ -70,9 +75,15 @@ export async function uploadFile(
       };
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', folder);
+    // Resolve uploads directory. Prefer explicit UPLOAD_DIR when provided to avoid
+    // relying on the process cwd (which can differ under PM2 or systemd).
+    const uploadsDir = join(UPLOAD_ROOT, folder);
     await mkdir(uploadsDir, { recursive: true });
+    // Diagnostic logging: show where files will be written and whether UPLOAD_DIR was used
+    try {
+      // eslint-disable-next-line no-console
+      console.info('[uploadFile] uploadsDir=', uploadsDir, 'UPLOAD_ROOT=', UPLOAD_ROOT, 'process.cwd=', process.cwd());
+    } catch {}
 
     // Generate unique filename
     const timestamp = Date.now();
@@ -94,6 +105,11 @@ export async function uploadFile(
 
     // Write file to disk
     const filepath = join(uploadsDir, filename);
+    // Diagnostic logging: file path about to be written
+    try {
+      // eslint-disable-next-line no-console
+      console.info('[uploadFile] writing file ->', filepath);
+    } catch {}
     await writeFile(filepath, buffer as Buffer);
 
     // Return public URL
@@ -119,9 +135,10 @@ export async function uploadFromBase64(
   filename?: string
 ): Promise<UploadResult> {
   try {
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', folder);
-    await mkdir(uploadsDir, { recursive: true });
+    // Resolve uploads directory using UPLOAD_ROOT
+  const uploadsDir = join(UPLOAD_ROOT, folder);
+  await mkdir(uploadsDir, { recursive: true });
+  try { console.info('[uploadFromBase64] uploadsDir=', uploadsDir, 'UPLOAD_ROOT=', UPLOAD_ROOT, 'process.cwd=', process.cwd()); } catch {}
 
     // Generate filename if not provided
     if (!filename) {
@@ -135,8 +152,9 @@ export async function uploadFromBase64(
     const buffer = Buffer.from(base64String, 'base64');
 
     // Write file to disk
-    const filepath = join(uploadsDir, filename);
-    await writeFile(filepath, buffer);
+  const filepath = join(uploadsDir, filename);
+  try { console.info('[uploadFromBase64] writing file ->', filepath); } catch {}
+  await writeFile(filepath, buffer);
 
     // Return public URL
     const publicUrl = `/${folder}/${filename}`;
@@ -160,9 +178,10 @@ export async function uploadFromUrl(
   folder: string = 'uploads'
 ): Promise<UploadResult> {
   try {
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', folder);
-    await mkdir(uploadsDir, { recursive: true });
+    // Resolve uploads directory using UPLOAD_ROOT
+  const uploadsDir = join(UPLOAD_ROOT, folder);
+  await mkdir(uploadsDir, { recursive: true });
+  try { console.info('[uploadFromUrl] uploadsDir=', uploadsDir, 'UPLOAD_ROOT=', UPLOAD_ROOT, 'process.cwd=', process.cwd()); } catch {}
 
     // Fetch image from URL
     const response = await fetch(imageUrl);
@@ -181,8 +200,9 @@ export async function uploadFromUrl(
     const filename = `${timestamp}-${randomString}.${fileExtension}`;
 
     // Write file to disk
-    const filepath = join(uploadsDir, filename);
-    await writeFile(filepath, buffer);
+  const filepath = join(uploadsDir, filename);
+  try { console.info('[uploadFromUrl] writing file ->', filepath); } catch {}
+  await writeFile(filepath, buffer);
 
     // Return public URL
     const publicUrl = `/${folder}/${filename}`;
