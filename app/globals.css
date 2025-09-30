@@ -1,11 +1,6 @@
 @import "tailwindcss";
 
-/* Register Mondstadt font - drop files in /public/fonts/Mondstadt */
-@font-face {
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
+/* If you add a custom font, register it here with font-family and src */
 
 :root {
   --background: #ffffff;

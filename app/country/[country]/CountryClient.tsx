@@ -350,7 +350,7 @@ const CountryClient = ({ params }: CountryClientProps) => {
                           onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             // route using slug if available, otherwise city or id
-                            const slug = (itinerary as any).slug || itinerary.city || itinerary.id;
+                            const slug = (((itinerary as unknown) as Record<string, unknown>).slug as string) || itinerary.city || itinerary.id;
                             handleViewItinerary({ ...itinerary, id: slug });
                           }}
                           aria-label={`View itinerary for ${itinerary.name}`}
