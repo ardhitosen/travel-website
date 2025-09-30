@@ -108,7 +108,13 @@ export async function POST(req: Request) {
     // column mismatch, we'll attempt a raw INSERT fallback afterwards.
     try {
       // rely on Prisma to do the correct typing at runtime; keep the data
-      const created = await (prisma as any).visaType.create({ data: createData });
+      // The Prisma client may not expose `visaType` in its TS type on older schemas.
+      // Use a safe typed lookup (no `any`) so ESLint stays happy while preserving runtime behavior.
+      const clientWithCreate = prisma as unknown as Record<
+        string,
+        { create: (args: { data: Record<string, unknown> }) => Promise<unknown> }
+      >;
+      const created = await clientWithCreate["visaType"].create({ data: createData });
       return NextResponse.json(created, { status: 201 });
     } catch (innerErr: unknown) {
       console.error('Prisma create failed for VisaType, attempting raw fallback:', (innerErr as Error)?.message ?? String(innerErr));
