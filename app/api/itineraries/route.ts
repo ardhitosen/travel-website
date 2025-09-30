@@ -31,20 +31,22 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const raw = await req.json().catch(() => ({}));
   try {
     // body may include: name, slug, city, duration, price, imageUrl, description, highlights, destinationId, days: [{ dayNumber, activities: [] }]
-    const {
-      days,
-      destinationId,
-      highlights,
-      ...rest
-    } = body as any;
+    const body = typeof raw === 'object' && raw !== null ? raw as Record<string, unknown> : {};
+    const days = Array.isArray(body.days) ? body.days as unknown[] : undefined;
+    const destinationId = body.destinationId;
+    const highlights = body.highlights;
+    const rest = Object.assign({}, body);
+    delete (rest as Record<string, unknown>).days;
+    delete (rest as Record<string, unknown>).destinationId;
+    delete (rest as Record<string, unknown>).highlights;
 
-  const data: any = { ...rest };
-  // ensure required fields have defaults when not provided by the client
-  if (typeof data.description === 'undefined') data.description = '';
-  if (typeof data.imageUrl === 'undefined') data.imageUrl = '';
+    const data: Record<string, unknown> = { ...rest };
+    // ensure required fields have defaults when not provided by the client
+    if (typeof data.description === 'undefined') data.description = '';
+    if (typeof data.imageUrl === 'undefined') data.imageUrl = '';
     if (typeof highlights !== 'undefined') data.highlights = highlights;
 
     // Destination is required and must be provided by id (relation)
@@ -56,10 +58,16 @@ export async function POST(req: Request) {
 
     // create nested days if provided
     if (Array.isArray(days) && days.length) {
-      data.days = { create: days.map((d: any) => ({ dayNumber: d.dayNumber ?? d.day ?? 0, activities: d.activities || [] })) };
+      const mappedDays = days.map((d) => {
+        const obj = typeof d === 'object' && d !== null ? d as Record<string, unknown> : {};
+        const dayNumber = Number(obj.dayNumber ?? obj.day ?? 0) || 0;
+        const activities = Array.isArray(obj.activities) ? obj.activities : [];
+        return { dayNumber, activities };
+      });
+      (data as Record<string, unknown>).days = { create: mappedDays };
     }
 
-    const created = await prisma.itinerary.create({ data });
+    const created = await prisma.itinerary.create({ data: data as any });
     return NextResponse.json(created, { status: 201 });
   } catch (err) {
     console.error('Failed to create itinerary', err);
