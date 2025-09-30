@@ -14,7 +14,8 @@ export async function GET(req: Request, context: RouteContext) {
   // `context.params` may be a thenable in some Next runtimes — handle both sync and async
   const rawParams = context?.params;
   const params = rawParams && typeof (rawParams as any).then === 'function' ? await rawParams : rawParams;
-  const param = (params as Record<string, unknown> | undefined)?.param ?? '';
+  const paramRaw = (params as Record<string, unknown> | undefined)?.param;
+  const param = typeof paramRaw === 'string' ? paramRaw : String(paramRaw ?? '');
 
   let destination;
   if (isNumericId(param)) {
@@ -25,28 +26,28 @@ export async function GET(req: Request, context: RouteContext) {
     });
   } else {
     // Search by name. Build a small set of likely name variants (raw, hyphen->space, title-case)
-    const variants = [param];
-    const spaced = param.replace(/-/g, ' ');
-    if (spaced !== param) variants.push(spaced);
-    const title = spaced.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    if (title && !variants.includes(title)) variants.push(title);
+  const variants: string[] = [param];
+  const spaced = param.replace(/-/g, ' ');
+  if (spaced !== param) variants.push(spaced);
+  const title = spaced.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  if (title && !variants.includes(title)) variants.push(title);
 
     // Query DB for any destination whose name is in the variants list (case-sensitive in DB),
     // then pick the best case-insensitive match in JS.
     const candidates = await prisma.destination.findMany({
-      where: { name: { in: variants } },
+      where: { name: { in: variants as string[] } },
       include: { itineraries: { include: { days: true } }, gallery: true }
     });
 
     if (candidates && candidates.length) {
-      const lowerVariants = variants.map(v => v.toLowerCase());
+      const lowerVariants = variants.map((v) => v.toLowerCase());
       // Find candidate whose name lowercased matches any variant in the same order
-      let found: Record<string, unknown> | null = null;
+      let foundIndex = -1;
       for (const v of lowerVariants) {
-        found = candidates.find((c) => String((c as Record<string, unknown>)['name'] ?? '').toLowerCase() === v) as Record<string, unknown> | undefined ?? null;
-        if (found) break;
+        foundIndex = candidates.findIndex((c) => String((c as Record<string, unknown>)['name'] ?? '').toLowerCase() === v);
+        if (foundIndex >= 0) break;
       }
-      destination = (found as unknown) ?? candidates[0];
+      destination = foundIndex >= 0 ? candidates[foundIndex] : candidates[0];
     } else {
       destination = null;
     }
@@ -62,7 +63,8 @@ export async function GET(req: Request, context: RouteContext) {
 export async function PUT(req: Request, context: RouteContext) {
   const rawParams = context?.params;
   const params = rawParams && typeof (rawParams as any).then === 'function' ? await rawParams : rawParams;
-  const param = (params as Record<string, unknown> | undefined)?.param ?? '';
+  const paramRaw = (params as Record<string, unknown> | undefined)?.param;
+  const param = typeof paramRaw === 'string' ? paramRaw : String(paramRaw ?? '');
   const data = await req.json();
 
   let updated;
@@ -74,8 +76,8 @@ export async function PUT(req: Request, context: RouteContext) {
   } else {
     // Update by name
     // updateMany returns a count; to be explicit return the affected rows after update
-    await prisma.destination.updateMany({ where: { name: { equals: param } }, data });
-    const list = await prisma.destination.findMany({ where: { name: { equals: param } } });
+    await prisma.destination.updateMany({ where: { name: { equals: String(param) } }, data });
+    const list = await prisma.destination.findMany({ where: { name: { equals: String(param) } } });
     updated = list;
   }
 
@@ -85,7 +87,8 @@ export async function PUT(req: Request, context: RouteContext) {
 export async function DELETE(_: Request, context: RouteContext) {
   const rawParams = context?.params;
   const params = rawParams && typeof (rawParams as any).then === 'function' ? await rawParams : rawParams;
-  const param = (params as Record<string, unknown> | undefined)?.param ?? '';
+  const paramRaw = (params as Record<string, unknown> | undefined)?.param;
+  const param = typeof paramRaw === 'string' ? paramRaw : String(paramRaw ?? '');
 
   if (isNumericId(param)) {
     // Delete by ID — first remove any files on disk
@@ -94,27 +97,32 @@ export async function DELETE(_: Request, context: RouteContext) {
       // load destination with related itineraries and gallery
       const dest = await prisma.destination.findUnique({ where: { id }, include: { gallery: true, itineraries: { include: { days: true } } } });
       if (dest) {
+        const destRec = dest as unknown as Record<string, unknown>;
         // delete itinerary days then itineraries to avoid FK constraint
-        if (Array.isArray(dest.itineraries)) {
-          for (const itin of dest.itineraries) {
+        if (Array.isArray(destRec['itineraries'])) {
+          for (const itin of destRec['itineraries'] as unknown[]) {
+            const itinRec = itin as Record<string, unknown>;
             try {
-              await prisma.itineraryDay.deleteMany({ where: { itineraryId: itin.id } });
-            } catch (e) { console.warn('Failed to delete itinerary days for', itin.id, e); }
+              await prisma.itineraryDay.deleteMany({ where: { itineraryId: Number(itinRec['id']) } });
+            } catch (e) { console.warn('Failed to delete itinerary days for', itinRec['id'], e); }
             try {
-              await prisma.itinerary.delete({ where: { id: itin.id } });
-            } catch (e) { console.warn('Failed to delete itinerary', itin.id, e); }
+              await prisma.itinerary.delete({ where: { id: Number(itinRec['id']) } });
+            } catch (e) { console.warn('Failed to delete itinerary', itinRec['id'], e); }
           }
         }
 
         // remove gallery files (only for local/relative paths, skip remote URLs)
-        if (dest.imageUrl && !/^https?:\/\//i.test(dest.imageUrl)) {
-          const p = dest.imageUrl.replace(/^\/+/, '');
+        const imageUrl = destRec['imageUrl'];
+        if (typeof imageUrl === 'string' && !/^https?:\/\//i.test(imageUrl)) {
+          const p = imageUrl.replace(/^\/+/, '');
           try { await unlink(join(process.cwd(), 'public', p)); } catch (err) { console.warn('Could not unlink dest image', err); }
         }
-        if (Array.isArray(dest.gallery)) {
-          for (const g of dest.gallery) {
-            if (g.imageUrl && !/^https?:\/\//i.test(g.imageUrl)) {
-              const p = g.imageUrl.replace(/^\/+/, '');
+        if (Array.isArray(destRec['gallery'])) {
+          for (const g of destRec['gallery'] as unknown[]) {
+            const gRec = g as Record<string, unknown>;
+            const gImage = gRec['imageUrl'];
+            if (typeof gImage === 'string' && !/^https?:\/\//i.test(gImage)) {
+              const p = gImage.replace(/^\/+/, '');
               try { await unlink(join(process.cwd(), 'public', p)); } catch (err) { console.warn('Could not unlink gallery image', err); }
             }
           }
@@ -136,23 +144,28 @@ export async function DELETE(_: Request, context: RouteContext) {
   } else {
     // Delete by name — remove files for all matched destinations
     try {
-      const list = await prisma.destination.findMany({ where: { name: { equals: param } }, include: { gallery: true, itineraries: { include: { days: true } } } });
+      const list = await prisma.destination.findMany({ where: { name: { equals: String(param) } }, include: { gallery: true, itineraries: { include: { days: true } } } });
       for (const dest of list) {
-        if (Array.isArray(dest.itineraries)) {
-          for (const itin of dest.itineraries) {
-            try { await prisma.itineraryDay.deleteMany({ where: { itineraryId: itin.id } }); } catch (e) { console.warn('Failed to delete itinerary days for', itin.id, e); }
-            try { await prisma.itinerary.delete({ where: { id: itin.id } }); } catch (e) { console.warn('Failed to delete itinerary', itin.id, e); }
+        const destRec = dest as unknown as Record<string, unknown>;
+        if (Array.isArray(destRec['itineraries'])) {
+          for (const itin of destRec['itineraries'] as unknown[]) {
+            const itinRec = itin as Record<string, unknown>;
+            try { await prisma.itineraryDay.deleteMany({ where: { itineraryId: Number(itinRec['id']) } }); } catch (e) { console.warn('Failed to delete itinerary days for', itinRec['id'], e); }
+            try { await prisma.itinerary.delete({ where: { id: Number(itinRec['id']) } }); } catch (e) { console.warn('Failed to delete itinerary', itinRec['id'], e); }
           }
         }
 
-        if (dest.imageUrl && !/^https?:\/\//i.test(dest.imageUrl)) {
-          const p = dest.imageUrl.replace(/^\/+/, '');
+        const img = destRec['imageUrl'];
+        if (typeof img === 'string' && !/^https?:\/\//i.test(img)) {
+          const p = img.replace(/^\/+/, '');
           try { await unlink(join(process.cwd(), 'public', p)); } catch (err) { console.warn('Could not unlink dest image', err); }
         }
-        if (Array.isArray(dest.gallery)) {
-          for (const g of dest.gallery) {
-            if (g.imageUrl && !/^https?:\/\//i.test(g.imageUrl)) {
-              const p = g.imageUrl.replace(/^\/+/, '');
+        if (Array.isArray(destRec['gallery'])) {
+          for (const g of destRec['gallery'] as unknown[]) {
+            const gRec = g as Record<string, unknown>;
+            const gImage = gRec['imageUrl'];
+            if (typeof gImage === 'string' && !/^https?:\/\//i.test(gImage)) {
+              const p = gImage.replace(/^\/+/, '');
               try { await unlink(join(process.cwd(), 'public', p)); } catch (err) { console.warn('Could not unlink gallery image', err); }
             }
           }
