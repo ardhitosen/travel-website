@@ -12,15 +12,44 @@ export interface UploadResult {
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || '10485760'); // 10MB default
 const ALLOWED_TYPES = (process.env.ALLOWED_FILE_TYPES || 'image/jpeg,image/png,image/gif,image/webp').split(',');
 
-function validateFile(file: { size?: number; type?: string } | undefined): string | null {
+type FileLike = {
+  name?: string;
+  size?: number;
+  type?: string;
+  arrayBuffer?: () => Promise<ArrayBuffer>;
+};
+
+const isFileLike = (f: unknown): f is FileLike => {
+  return typeof f === 'object' && f !== null && (
+    typeof (f as FileLike).arrayBuffer === 'function' ||
+    typeof (f as FileLike).size === 'number' ||
+    typeof (f as FileLike).name === 'string' ||
+    typeof (f as FileLike).type === 'string'
+  );
+};
+
+function validateFile(file: unknown): string | null {
   if (!file) return 'No file provided';
+
+  let size: number | undefined;
+  let type: string | undefined;
+
+  if (Buffer.isBuffer(file)) {
+    size = (file as Buffer).length;
+  } else if (isFileLike(file)) {
+    size = file.size;
+    type = file.type;
+  } else {
+    return 'Unsupported file object';
+  }
+
   // Check file size
-  if ((file.size || 0) > MAX_FILE_SIZE) {
+  if ((size || 0) > MAX_FILE_SIZE) {
     return `File size too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`;
   }
 
   // Check file type
-  if (file.type && !ALLOWED_TYPES.includes(file.type)) {
+  if (type && !ALLOWED_TYPES.includes(type)) {
     return `File type not allowed. Allowed types: ${ALLOWED_TYPES.join(', ')}`;
   }
 
@@ -28,7 +57,7 @@ function validateFile(file: { size?: number; type?: string } | undefined): strin
 }
 
 export async function uploadFile(
-  file: any,
+  file: unknown,
   folder: string = 'uploads'
 ): Promise<UploadResult> {
   try {
@@ -48,22 +77,19 @@ export async function uploadFile(
     // Generate unique filename
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
-    const origName = (file && file.name) || `${timestamp}`;
+  const origName = (isFileLike(file) && file.name) ? file.name : `${timestamp}`;
     const fileExtension = String(origName).split('.').pop()?.toLowerCase() || 'jpg';
     const filename = `${timestamp}-${randomString}.${fileExtension}`;
     
     // Convert file to buffer
     let buffer: Buffer;
-    if (typeof file.arrayBuffer !== 'function') {
-      // Some runtimes provide Blob with stream() — try to handle Buffer directly
-      if (file instanceof Buffer) {
-        buffer = file as Buffer;
-      } else {
-        return { success: false, error: 'Uploaded file missing arrayBuffer method' };
-      }
-    } else {
+    if (Buffer.isBuffer(file)) {
+      buffer = file as Buffer;
+    } else if (isFileLike(file) && typeof file.arrayBuffer === 'function') {
       const bytes = await file.arrayBuffer();
       buffer = Buffer.from(bytes as ArrayBuffer);
+    } else {
+      return { success: false, error: 'Uploaded file missing arrayBuffer method' };
     }
 
     // Write file to disk
