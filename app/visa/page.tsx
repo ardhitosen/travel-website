@@ -48,7 +48,12 @@ const VisaPage = () => {
           const obj = v as Record<string, unknown>;
           const id = toStr(obj.id ?? obj.slug ?? obj.name) || String(Math.random());
           const countryVal = obj.country ?? obj.destination ?? obj.location;
-          const country = typeof countryVal === 'string' ? countryVal : (countryVal && typeof countryVal === 'object' ? (String((countryVal as any).country || (countryVal as any).name || '') ) : '');
+          let country = '';
+          if (typeof countryVal === 'string') country = countryVal;
+          else if (countryVal && typeof countryVal === 'object') {
+            const cv = countryVal as Record<string, unknown>;
+            country = typeof cv.country === 'string' ? cv.country : (typeof cv.name === 'string' ? cv.name : '');
+          }
           return {
             id: id,
             name: toStr(obj.name ?? obj.title),

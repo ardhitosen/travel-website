@@ -14,12 +14,35 @@ type Destination = {
   highlights?: unknown;
 };
 
+type VisaAdmin = {
+  id?: string | number;
+  name?: string;
+  duration?: string;
+  processingTime?: string;
+  price?: string;
+  imageUrl?: string;
+  requirements?: unknown;
+  documents?: unknown;
+};
+
+type ItineraryAdmin = {
+  id?: string | number;
+  name?: string;
+  city?: string;
+  duration?: string;
+  price?: string;
+  highlights?: unknown;
+  days?: unknown;
+};
+
+type Promotion = { id?: string | number; title?: string; description?: string; imageUrl?: string; position?: number; destination?: string };
+
 const AdminPage = () => {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
-  const [visas, setVisas] = useState<any[]>([]);
-  const [itineraries, setItineraries] = useState<any[]>([]);
-  const [promotions, setPromotions] = useState<any[]>([]);
+  const [visas, setVisas] = useState<VisaAdmin[]>([]);
+  const [itineraries, setItineraries] = useState<ItineraryAdmin[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [activeTab, setActiveTab] = useState<'banners'|'destinations'|'visas'|'itineraries'|'promos'>('banners');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -113,8 +136,8 @@ const AdminPage = () => {
   // Inline edit dialog state
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   // Visa / Itinerary edit state
-  const [editingVisa, setEditingVisa] = useState<any | null>(null);
-  const [editingItinerary, setEditingItinerary] = useState<any | null>(null);
+  const [editingVisa, setEditingVisa] = useState<VisaAdmin | null>(null);
+  const [editingItinerary, setEditingItinerary] = useState<ItineraryAdmin | null>(null);
 
   const updateBanner = async (id: number | string, imageUrl: string | null, destination: string) => {
     const body: any = { destination };
@@ -134,6 +157,23 @@ const AdminPage = () => {
       console.error('Error normalizing highlights:', err);
     }
     return [];
+  };
+
+  const safeJoin = (x: unknown, sep = ', ') => {
+    if (!x) return '—';
+    if (Array.isArray(x)) return x.map(String).join(sep) || '—';
+    return String(x) || '—';
+  };
+
+  const safeLength = (x: unknown) => {
+    if (!x) return 0;
+    if (Array.isArray(x)) return x.length;
+    try {
+      const s = String(x);
+      return s.length;
+    } catch {
+      return 0;
+    }
   };
 
   return (
@@ -300,7 +340,7 @@ const AdminPage = () => {
           }} destinations={destinations} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-6">
-            {visas.map((v: any) => (
+            {visas.map((v) => (
               <motion.div key={v.id} className="p-5 bg-white/90 border border-slate-200 rounded-2xl shadow-sm hover:shadow-xl transition flex flex-col gap-4" whileHover={{ y: -3, scale: 1.01 }}>
                 <div className="flex items-start gap-4">
                   <div className="w-28 h-20 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
@@ -329,8 +369,8 @@ const AdminPage = () => {
                       </div>
                     </div>
                     {/* destination not required in admin form */}
-                    <div className="text-sm text-slate-600">Requirements: {(v.requirements || []).join(', ') || '—'}</div>
-                    <div className="text-sm text-slate-600">Documents: {(v.documents || []).join(', ') || '—'}</div>
+                    <div className="text-sm text-slate-600">Requirements: {safeJoin(v.requirements)}</div>
+                    <div className="text-sm text-slate-600">Documents: {safeJoin(v.documents)}</div>
                   </div>
                 </div>
               </motion.div>
@@ -360,7 +400,7 @@ const AdminPage = () => {
           }} destinations={destinations} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-6">
-            {itineraries.map((it: any) => (
+            {itineraries.map((it) => (
               <motion.div key={it.id} className="p-5 bg-white/90 border border-slate-200 rounded-2xl shadow-sm hover:shadow-xl transition flex flex-col gap-4" whileHover={{ y: -3, scale: 1.01 }}>
                 <div className="flex justify-between items-start">
                   <div>
@@ -379,8 +419,8 @@ const AdminPage = () => {
                   </div>
                 </div>
                 {/* destination not required in admin list */}
-                <div className="text-sm text-slate-600">Highlights: {(it.highlights || []).join(', ') || '—'}</div>
-                <div className="text-sm text-slate-600">Days: {(it.days || []).length}</div>
+                <div className="text-sm text-slate-600">Highlights: {safeJoin(it.highlights)}</div>
+                <div className="text-sm text-slate-600">Days: {safeLength(it.days)}</div>
               </motion.div>
             ))}
           </div>

@@ -58,7 +58,7 @@ const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [fetchedBanners, setFetchedBanners] = useState<Record<string, unknown>[] | null>(null);
   const [fetchedDestinations, setFetchedDestinations] = useState<TravelOption[] | null>(null);
-  const [fetchedPromotions, setFetchedPromotions] = useState<Record<string, any>[] | null>(null);
+  const [fetchedPromotions, setFetchedPromotions] = useState<Record<string, unknown>[] | null>(null);
   const [promoModalOpen, setPromoModalOpen] = useState(false);
   const [selectedPromoImage, setSelectedPromoImage] = useState<string>("");
 
