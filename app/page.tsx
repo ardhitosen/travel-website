@@ -70,11 +70,13 @@ const router = useRouter();
     const destination = typeof src["destination"] === "string" ? (src["destination"] as string) : "";
     return { image, fact, destination };
   });
-  const destinations: TravelOption[] = (fetchedDestinations || []).map((d: any) => ({
-    // some backends use `imageUrl`, some use `image` — normalize to `image`
-    ...d,
-    image: d.image || d.imageUrl || ''
-  }));
+  const destinations: TravelOption[] = (fetchedDestinations || []).map((d: unknown) => {
+    const obj = d as Record<string, unknown>;
+    return {
+      ...(obj as object),
+      image: typeof obj.image === 'string' ? obj.image : (typeof obj.imageUrl === 'string' ? obj.imageUrl : '')
+    } as TravelOption;
+  });
 
   // Build promo items from the Promotion table (via /api/promotions), limit to 2.
   // Fall back to static promos if none available.
@@ -373,8 +375,9 @@ return (
                      transition={{ duration: 0.6, delay: idx * 0.2 }}
                      viewport={{ once: true }}
                      onClick={() => {
-                       if ((promo as any).destination) {
-                         router.push(`/country/${encodeURIComponent(String((promo as any).destination).toLowerCase())}`);
+                       const promoObj = promo as Record<string, unknown>;
+                       if (promoObj.destination && typeof promoObj.destination === 'string') {
+                         router.push(`/country/${encodeURIComponent(promoObj.destination.toLowerCase())}`);
                        } else {
                          handleOpenPromoModal(promo.image);
                        }

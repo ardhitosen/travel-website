@@ -37,21 +37,34 @@ const VisaPage = () => {
       .then((data) => {
         if (!mounted) return;
         // Normalize returned data to the VisaService shape
-        const normalized: VisaService[] = (data || []).map((v: any) => ({
-          id: String(v.id || v.slug || v.name || Math.random()),
-          name: v.name || v.title || '',
-          country: v.country || (typeof v.destination === 'string' ? v.destination : (v.destination && (v.destination.country || v.destination.name))) || v.location || '',
-          category: v.category || v.type || 'General',
-          processingTime: v.processingTime || v.processing || v.processing_time || '',
-          validity: v.validity || '',
-          requirements: Array.isArray(v.requirements) ? v.requirements : (typeof v.requirements === 'string' ? v.requirements.split(',').map((s: string) => s.trim()) : []),
-          documents: Array.isArray(v.documents) ? v.documents : (typeof v.documents === 'string' ? v.documents.split(',').map((s: string) => s.trim()) : []),
-          price: v.price ? String(v.price) : (v.fee ? String(v.fee) : ''),
-          description: v.description || v.summary || '',
-          image: v.imageUrl || v.image || '',
-          isPopular: !!v.isPopular,
-          isExpress: !!v.isExpress
-        }));
+        const toStr = (x: unknown) => (typeof x === 'string' ? x : (typeof x === 'number' ? String(x) : ''));
+        const toStrArr = (x: unknown) => {
+          if (Array.isArray(x)) return x.filter((s) => typeof s === 'string') as string[];
+          if (typeof x === 'string') return x.split(',').map(s => s.trim()).filter(Boolean);
+          return [] as string[];
+        };
+
+        const normalized: VisaService[] = (data || []).map((v: unknown) => {
+          const obj = v as Record<string, unknown>;
+          const id = toStr(obj.id ?? obj.slug ?? obj.name) || String(Math.random());
+          const countryVal = obj.country ?? obj.destination ?? obj.location;
+          const country = typeof countryVal === 'string' ? countryVal : (countryVal && typeof countryVal === 'object' ? (String((countryVal as any).country || (countryVal as any).name || '') ) : '');
+          return {
+            id: id,
+            name: toStr(obj.name ?? obj.title),
+            country,
+            category: toStr(obj.category ?? obj.type) || 'General',
+            processingTime: toStr(obj.processingTime ?? obj.processing ?? obj.processing_time),
+            validity: toStr(obj.validity),
+            requirements: toStrArr(obj.requirements),
+            documents: toStrArr(obj.documents),
+            price: obj.price ? String(obj.price) : (obj.fee ? String(obj.fee) : ''),
+            description: toStr(obj.description ?? obj.summary),
+            image: toStr(obj.imageUrl ?? obj.image),
+            isPopular: !!obj.isPopular,
+            isExpress: !!obj.isExpress
+          } as VisaService;
+        });
 
         setVisaServices(normalized);
       })
