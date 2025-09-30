@@ -17,12 +17,17 @@ export async function POST(req: Request) {
       }
 
       // Some runtimes provide File, others provide Blob-like objects. Ensure it has arrayBuffer
-      if (typeof (file as any).arrayBuffer !== 'function') {
-        console.error('Upload: received file object without arrayBuffer method', Object.keys(file as any));
+      const maybeFile = file as unknown;
+      if (typeof (maybeFile as { arrayBuffer?: unknown }).arrayBuffer !== 'function') {
+        try {
+          console.error('Upload: received file object without arrayBuffer method', Object.keys(Object(maybeFile)));
+        } catch {
+          console.error('Upload: received file object without arrayBuffer method');
+        }
         return NextResponse.json({ error: 'Invalid file upload' }, { status: 400 });
       }
 
-      const result = await uploadFile(file as unknown as File, "jos");
+      const result = await uploadFile(maybeFile as unknown as File, "jos");
       if (!result.success) {
         console.error('Upload failed:', result.error);
         return NextResponse.json({ error: result.error }, { status: 400 });
@@ -36,15 +41,16 @@ export async function POST(req: Request) {
     }
 
     // Handle JSON body
-    let body: any = {};
+    let body: unknown = {};
     try {
       body = await req.json();
-    } catch (err) {
-      // ignore
+    } catch {
+      // ignore parse errors — we'll fall through and return a 400 below
     }
 
-    if (body?.url) {
-      const result = await uploadFromUrl(body.url, "jos");
+    if (typeof body === 'object' && body !== null && 'url' in body) {
+      const url = (body as Record<string, unknown>)['url'];
+      const result = await uploadFromUrl(String(url), "jos");
       if (!result.success) {
         console.error('Upload from url failed:', result.error);
         return NextResponse.json({ error: result.error }, { status: 400 });
@@ -57,8 +63,9 @@ export async function POST(req: Request) {
       });
     }
 
-    if (body?.base64) {
-      const result = await uploadFromBase64(body.base64, "jos");
+    if (typeof body === 'object' && body !== null && 'base64' in body) {
+      const base64 = (body as Record<string, unknown>)['base64'];
+      const result = await uploadFromBase64(String(base64), "jos");
       if (!result.success) {
         console.error('Upload from base64 failed:', result.error);
         return NextResponse.json({ error: result.error }, { status: 400 });
