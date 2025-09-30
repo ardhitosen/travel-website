@@ -1,23 +1,33 @@
 import { NextResponse } from "next/server";
 import prisma from "../../../lib/prisma";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function PUT(req: Request, context: any) {
-  const params = context?.params as { id?: string } | undefined;
+type RouteContext = { params?: { id?: string } } | undefined;
+
+export async function PUT(req: Request, context: RouteContext) {
+  const params = context?.params;
   const id = Number(params?.id);
-  const body = await req.json();
+  const raw = await req.json().catch(() => ({}));
   try {
-    const { days, destinationId, destinationName, highlights, ...rest } = body as any;
+    const body = typeof raw === 'object' && raw !== null ? raw as Record<string, unknown> : {};
+    const days = Array.isArray(body.days) ? body.days as unknown[] : undefined;
+    const destinationId = body.destinationId;
+    const destinationName = body.destinationName;
+    const highlights = body.highlights;
+    const rest = Object.assign({}, body);
+    delete (rest as Record<string, unknown>).days;
+    delete (rest as Record<string, unknown>).destinationId;
+    delete (rest as Record<string, unknown>).destinationName;
+    delete (rest as Record<string, unknown>).highlights;
 
     // Build update payload (excluding days which are handled separately)
-    const updatePayload: any = { ...rest };
+    const updatePayload: Record<string, unknown> = { ...rest };
     if (typeof highlights !== 'undefined') updatePayload.highlights = highlights;
 
     // Handle destination connect/disconnect
     if (destinationId) {
       updatePayload.destination = { connect: { id: Number(destinationId) } };
     } else if (destinationName) {
-      const dest = await prisma.destination.findFirst({ where: { name: { equals: destinationName } } });
+      const dest = await prisma.destination.findFirst({ where: { name: { equals: String(destinationName) } } });
       if (dest) updatePayload.destination = { connect: { id: dest.id } };
     }
 
@@ -30,22 +40,24 @@ export async function PUT(req: Request, context: any) {
       // recreate days
       if (Array.isArray(days) && days.length) {
         for (const d of days) {
-          await tx.itineraryDay.create({ data: { dayNumber: d.dayNumber ?? d.day ?? 0, activities: d.activities || [], itineraryId: id } });
+          const obj = typeof d === 'object' && d !== null ? d as Record<string, unknown> : {};
+          const dayNumber = Number(obj.dayNumber ?? obj.day ?? 0) || 0;
+          const activities = Array.isArray(obj.activities) ? obj.activities : [];
+          await tx.itineraryDay.create({ data: { dayNumber, activities, itineraryId: id } });
         }
       }
       return updated;
     });
 
     return NextResponse.json(result);
-  } catch (err) {
-    console.error('Failed to update itinerary', err);
+  } catch (err: unknown) {
+    console.error('Failed to update itinerary', String(err));
     return NextResponse.json({ error: 'Failed to update itinerary' }, { status: 500 });
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function DELETE(_: Request, context: any) {
-  const params = context?.params as { id?: string } | undefined;
+export async function DELETE(_: Request, context: RouteContext) {
+  const params = context?.params;
   const id = Number(params?.id);
   if (Number.isNaN(id) || id <= 0) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
@@ -53,18 +65,19 @@ export async function DELETE(_: Request, context: any) {
   // remove child days first to avoid foreign key constraint errors
   try {
     await prisma.itineraryDay.deleteMany({ where: { itineraryId: id } });
-  } catch (e) {
+  } catch {
     // ignore
   }
   try {
     await prisma.itinerary.delete({ where: { id } });
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Prisma: P2025 = record not found
-    if (err?.code === 'P2025') {
+    const code = (err as Record<string, unknown>)['code'];
+    if (code === 'P2025') {
       return NextResponse.json({ error: 'Itinerary not found' }, { status: 404 });
     }
-    console.error('Failed to delete itinerary', err);
+    console.error('Failed to delete itinerary', String(err));
     return NextResponse.json({ error: 'Failed to delete itinerary' }, { status: 500 });
   }
 }

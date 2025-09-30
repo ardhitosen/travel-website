@@ -8,12 +8,13 @@ function isNumericId(param: string): boolean {
   return !isNaN(Number(param));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function GET(req: Request, context: any) {
+type RouteContext = { params?: Promise<Record<string, unknown>> | Record<string, unknown> } | undefined;
+
+export async function GET(req: Request, context: RouteContext) {
   // `context.params` may be a thenable in some Next runtimes — handle both sync and async
-  const rawParams = context?.params as any;
-  const params = rawParams && typeof rawParams.then === 'function' ? await rawParams : rawParams;
-  const param = params?.param ?? '';
+  const rawParams = context?.params;
+  const params = rawParams && typeof (rawParams as any).then === 'function' ? await rawParams : rawParams;
+  const param = (params as Record<string, unknown> | undefined)?.param ?? '';
 
   let destination;
   if (isNumericId(param)) {
@@ -40,12 +41,12 @@ export async function GET(req: Request, context: any) {
     if (candidates && candidates.length) {
       const lowerVariants = variants.map(v => v.toLowerCase());
       // Find candidate whose name lowercased matches any variant in the same order
-      let found: any = null;
+      let found: Record<string, unknown> | null = null;
       for (const v of lowerVariants) {
-        found = candidates.find((c: any) => String(c.name || '').toLowerCase() === v);
+        found = candidates.find((c) => String((c as Record<string, unknown>)['name'] ?? '').toLowerCase() === v) as Record<string, unknown> | undefined ?? null;
         if (found) break;
       }
-      destination = found || candidates[0];
+      destination = (found as unknown) ?? candidates[0];
     } else {
       destination = null;
     }
@@ -58,11 +59,10 @@ export async function GET(req: Request, context: any) {
   return NextResponse.json(destination);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function PUT(req: Request, context: any) {
-  const rawParams = context?.params as any;
-  const params = rawParams && typeof rawParams.then === 'function' ? await rawParams : rawParams;
-  const param = params?.param ?? '';
+export async function PUT(req: Request, context: RouteContext) {
+  const rawParams = context?.params;
+  const params = rawParams && typeof (rawParams as any).then === 'function' ? await rawParams : rawParams;
+  const param = (params as Record<string, unknown> | undefined)?.param ?? '';
   const data = await req.json();
 
   let updated;
@@ -82,11 +82,10 @@ export async function PUT(req: Request, context: any) {
   return NextResponse.json(updated);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function DELETE(_: Request, context: any) {
-  const rawParams = context?.params as any;
-  const params = rawParams && typeof rawParams.then === 'function' ? await rawParams : rawParams;
-  const param = params?.param ?? '';
+export async function DELETE(_: Request, context: RouteContext) {
+  const rawParams = context?.params;
+  const params = rawParams && typeof (rawParams as any).then === 'function' ? await rawParams : rawParams;
+  const param = (params as Record<string, unknown> | undefined)?.param ?? '';
 
   if (isNumericId(param)) {
     // Delete by ID — first remove any files on disk
