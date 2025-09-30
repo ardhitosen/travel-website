@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       if (existing.includes('title') && title != null) data.title = title;
       if (existing.includes('description') && description != null) data.description = description;
       if (existing.includes('position')) data.position = position ?? 0;
-    } catch (e: unknown) {
+    } catch {
       data = { imageUrl: String(imageUrl ?? ''), title: title ?? null, description: description ?? null, position: position ?? 0 };
     }
     try {

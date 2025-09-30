@@ -67,7 +67,8 @@ export async function POST(req: Request) {
       (data as Record<string, unknown>).days = { create: mappedDays };
     }
 
-    const created = await prisma.itinerary.create({ data: data as any });
+  // cast through unknown to avoid explicit `any` while keeping runtime behavior
+  const created = await (prisma as unknown as { itinerary: { create: (args: { data: Record<string, unknown> }) => Promise<unknown> } }).itinerary.create({ data: data });
     return NextResponse.json(created, { status: 201 });
   } catch (err) {
     console.error('Failed to create itinerary', err);
