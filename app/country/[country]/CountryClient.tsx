@@ -38,7 +38,7 @@ const CountryClient = ({ params }: CountryClientProps) => {
     itineraries: CountryItinerary[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -51,7 +51,7 @@ const CountryClient = ({ params }: CountryClientProps) => {
           if (!res.ok) return null;
           const d = await res.json();
           return d;
-        } catch (e) {
+        } catch {
           return null;
         }
       };
