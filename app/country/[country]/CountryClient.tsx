@@ -29,6 +29,7 @@ interface CountryClientProps {
 const CountryClient = ({ params }: CountryClientProps) => {
   const router = useRouter();
   const [scrollY, setScrollY] = useState(0);
+  // params.country is expected to be the destination slug (URL-safe identifier)
   const countryName = params.country;
 
   const [countryData, setCountryData] = useState<{
@@ -45,38 +46,35 @@ const CountryClient = ({ params }: CountryClientProps) => {
       setLoading(true);
       setError(null);
       if (!countryName) { setLoading(false); return; }
-      const tryFetch = async (param: string) => {
-        try {
-          const res = await fetch(`/api/destinations/${encodeURIComponent(param)}`);
-          if (!res.ok) return null;
-          const d = await res.json();
-          return d;
-        } catch {
-          return null;
-        }
+      // Treat the incoming route param as the destination slug. The API supports
+      // fetching by slug (e.g. /api/destinations/:slug). Try that first; fall back
+      // to the generic list lookup if needed.
+      // param may be double-encoded by the router; decode first then encode once
+      const tryDecode = (s: string) => {
+        try { return decodeURIComponent(s); } catch { return s; }
       };
-
-      // Try raw param, then a few fallbacks (capitalized, hyphen -> space, title-case)
-      let dest = await tryFetch(countryName);
-      if (!dest) {
-        const cap = countryName.charAt(0).toUpperCase() + countryName.slice(1);
-        dest = await tryFetch(cap);
+      const slugParam = tryDecode(String(countryName));
+      let dest = null;
+      try {
+        const res = await fetch(`/api/destinations/${encodeURIComponent(slugParam)}`);
+        if (res.ok) dest = await res.json();
+      } catch (err) {
+        // ignore and fallback
       }
 
+      // If the API didn't return a matching destination for the slug, try loading
+      // all destinations and matching by slug or name as a last resort.
       if (!dest) {
-        // replace hyphens with spaces (e.g. `south-korea` -> `south korea`)
-        const spaced = countryName.replace(/-/g, ' ');
-        if (spaced !== countryName) {
-          dest = await tryFetch(spaced);
-        }
-      }
-
-      if (!dest) {
-        // Title-case each word (e.g. `south korea` -> `South Korea`)
-        const spaced = countryName.replace(/-/g, ' ');
-        const title = spaced.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        if (title && title !== countryName) {
-          dest = await tryFetch(title);
+        try {
+          const allRes = await fetch('/api/destinations');
+          if (allRes.ok) {
+            const all = await allRes.json();
+            if (Array.isArray(all)) {
+              dest = all.find((d: any) => String(d.slug || '').toLowerCase() === String(countryName).toLowerCase() || String(d.name || '').toLowerCase() === String(countryName).toLowerCase()) || null;
+            }
+          }
+        } catch (err) {
+          // ignore
         }
       }
 

@@ -14,12 +14,20 @@ function isThenable<T = unknown>(obj: unknown): obj is Promise<T> {
   return typeof obj === 'object' && obj !== null && typeof (obj as { then?: unknown }).then === 'function';
 }
 
+// Helper to create a simple URL-safe slug from a name
+function slugifyName(s: string) {
+  return String(s || '').toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+}
+
 export async function GET(req: Request, context: RouteContext) {
   // `context.params` may be a thenable in some Next runtimes — handle both sync and async
   const rawParams = context?.params;
   const params = isThenable(rawParams) ? await rawParams : rawParams;
   const paramRaw = (params as Record<string, unknown> | undefined)?.param;
   const param = typeof paramRaw === 'string' ? paramRaw : String(paramRaw ?? '');
+  // Normalize incoming param: decode percent encoding and convert to slug form
+  const decodedParam = (() => { try { return decodeURIComponent(String(param)); } catch { return String(param); } })();
+  const paramSlugNormalized = slugifyName(decodedParam);
 
   let destination;
   if (isNumericId(param)) {
@@ -29,31 +37,35 @@ export async function GET(req: Request, context: RouteContext) {
       include: { itineraries: { include: { days: true } }, gallery: true }
     });
   } else {
-    // Search by name. Build a small set of likely name variants (raw, hyphen->space, title-case)
-  const variants: string[] = [param];
-  const spaced = param.replace(/-/g, ' ');
-  if (spaced !== param) variants.push(spaced);
-  const title = spaced.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  if (title && !variants.includes(title)) variants.push(title);
+    // We don't have a dedicated `slug` column on Destination. Build a slug from
+    // the destination name and match that against the param (e.g. "South Korea" -> "south-korea").
+  const all = await prisma.destination.findMany({ include: { itineraries: { include: { days: true } }, gallery: true } });
+  destination = all.find((d: any) => slugifyName(d.name) === paramSlugNormalized) || null;
 
-    // Query DB for any destination whose name is in the variants list (case-sensitive in DB),
-    // then pick the best case-insensitive match in JS.
-    const candidates = await prisma.destination.findMany({
-      where: { name: { in: variants as string[] } },
-      include: { itineraries: { include: { days: true } }, gallery: true }
-    });
+    if (!destination) {
+      // Fall back to name variants search for compatibility with previous behaviour
+      const variants: string[] = [param];
+      const spaced = param.replace(/-/g, ' ');
+      if (spaced !== param) variants.push(spaced);
+      const title = spaced.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      if (title && !variants.includes(title)) variants.push(title);
 
-    if (candidates && candidates.length) {
-      const lowerVariants = variants.map((v) => v.toLowerCase());
-      // Find candidate whose name lowercased matches any variant in the same order
-      let foundIndex = -1;
-      for (const v of lowerVariants) {
-        foundIndex = candidates.findIndex((c) => String((c as Record<string, unknown>)['name'] ?? '').toLowerCase() === v);
-        if (foundIndex >= 0) break;
+      const candidates = await prisma.destination.findMany({
+        where: { name: { in: variants as string[] } },
+        include: { itineraries: { include: { days: true } }, gallery: true }
+      });
+
+      if (candidates && candidates.length) {
+        const lowerVariants = variants.map((v) => v.toLowerCase());
+        let foundIndex = -1;
+        for (const v of lowerVariants) {
+          foundIndex = candidates.findIndex((c) => String((c as Record<string, unknown>)['name'] ?? '').toLowerCase() === v);
+          if (foundIndex >= 0) break;
+        }
+        destination = foundIndex >= 0 ? candidates[foundIndex] : candidates[0];
+      } else {
+        destination = null;
       }
-      destination = foundIndex >= 0 ? candidates[foundIndex] : candidates[0];
-    } else {
-      destination = null;
     }
   }
 
@@ -69,6 +81,9 @@ export async function PUT(req: Request, context: RouteContext) {
   const params = isThenable(rawParams) ? await rawParams : rawParams;
   const paramRaw = (params as Record<string, unknown> | undefined)?.param;
   const param = typeof paramRaw === 'string' ? paramRaw : String(paramRaw ?? '');
+  // Normalize incoming param for update: decode percent encoding and convert to slug form
+  const decodedParam = (() => { try { return decodeURIComponent(String(param)); } catch { return String(param); } })();
+  const paramSlugNormalized = slugifyName(decodedParam);
   const data = await req.json();
 
   let updated;
@@ -78,11 +93,19 @@ export async function PUT(req: Request, context: RouteContext) {
     if (Number.isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
     updated = await prisma.destination.update({ where: { id }, data });
   } else {
-    // Update by name
-    // updateMany returns a count; to be explicit return the affected rows after update
-    await prisma.destination.updateMany({ where: { name: { equals: String(param) } }, data });
-    const list = await prisma.destination.findMany({ where: { name: { equals: String(param) } } });
-    updated = list;
+    // Update by slug if it matches an existing destination, otherwise update by name
+    // Look for a destination whose generated slug matches the provided param
+    const allForUpdate = await prisma.destination.findMany();
+  const existingBySlug = allForUpdate.find((d: any) => slugifyName(d.name) === paramSlugNormalized);
+    if (existingBySlug) {
+      // update by id to satisfy Prisma's typed where input
+      updated = await prisma.destination.update({ where: { id: Number(existingBySlug.id) }, data });
+    } else {
+      // updateMany returns a count; to be explicit return the affected rows after update
+      await prisma.destination.updateMany({ where: { name: { equals: String(param) } }, data });
+      const list = await prisma.destination.findMany({ where: { name: { equals: String(param) } } });
+      updated = list;
+    }
   }
 
   return NextResponse.json(updated);
@@ -93,6 +116,9 @@ export async function DELETE(_: Request, context: RouteContext) {
   const params = isThenable(rawParams) ? await rawParams : rawParams;
   const paramRaw = (params as Record<string, unknown> | undefined)?.param;
   const param = typeof paramRaw === 'string' ? paramRaw : String(paramRaw ?? '');
+  // Normalize incoming param for delete: decode percent encoding and convert to slug form
+  const decodedParam = (() => { try { return decodeURIComponent(String(param)); } catch { return String(param); } })();
+  const paramSlugNormalized = slugifyName(decodedParam);
 
   if (isNumericId(param)) {
     // Delete by ID — first remove any files on disk
@@ -146,9 +172,16 @@ export async function DELETE(_: Request, context: RouteContext) {
       return NextResponse.json({ error: 'Failed to delete destination' }, { status: 500 });
     }
   } else {
-    // Delete by name — remove files for all matched destinations
+    // Delete by slug if matched, otherwise delete by name — remove files for all matched destinations
     try {
-      const list = await prisma.destination.findMany({ where: { name: { equals: String(param) } }, include: { gallery: true, itineraries: { include: { days: true } } } });
+      let list = [] as any[];
+      const allForDelete = await prisma.destination.findMany({ include: { gallery: true, itineraries: { include: { days: true } } } });
+  const bySlug = allForDelete.find((d: any) => slugifyName(d.name) === paramSlugNormalized);
+      if (bySlug) {
+        list = [bySlug];
+      } else {
+        list = await prisma.destination.findMany({ where: { name: { equals: String(param) } }, include: { gallery: true, itineraries: { include: { days: true } } } });
+      }
       for (const dest of list) {
         const destRec = dest as unknown as Record<string, unknown>;
         if (Array.isArray(destRec['itineraries'])) {
@@ -175,9 +208,14 @@ export async function DELETE(_: Request, context: RouteContext) {
           }
         }
       }
-      // delete gallery rows for all matched destinations, then delete destinations
-      try { await prisma.galleryImage.deleteMany({ where: { destination: { name: { equals: param } } } }); } catch (e) { console.warn('Failed to delete gallery rows by name', param, e); }
-      await prisma.destination.deleteMany({ where: { name: { equals: param } } });
+      // delete gallery rows and destination record(s)
+      if (bySlug) {
+        try { await prisma.galleryImage.deleteMany({ where: { destinationId: Number(bySlug.id) } }); } catch (e) { console.warn('Failed to delete gallery rows by slug', param, e); }
+        await prisma.destination.delete({ where: { id: Number(bySlug.id) } });
+      } else {
+        try { await prisma.galleryImage.deleteMany({ where: { destination: { name: { equals: param } } } }); } catch (e) { console.warn('Failed to delete gallery rows by name', param, e); }
+        await prisma.destination.deleteMany({ where: { name: { equals: param } } });
+      }
     } catch (err) {
       console.error('Error while deleting destinations by name:', err);
       return NextResponse.json({ error: 'Failed to delete destinations' }, { status: 500 });

@@ -42,18 +42,33 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
       if (!countryName || !cityName) { setLoading(false); return; }
 
       // Try to load destination then find itinerary by slug or city or id
-      const tryFetch = async (param: string) => {
-        try {
-          const res = await fetch(`/api/destinations/${encodeURIComponent(param)}`);
-          if (!res.ok) return null;
-          return await res.json();
-        } catch { return null; }
+      // Treat params.country as destination slug. Try fetching by slug, then
+      // fall back to loading all destinations and matching by slug/name.
+      // param could be encoded by the router; decode then encode once for API
+      const tryDecode = (s: string) => {
+        try { return decodeURIComponent(s); } catch { return s; }
       };
+      const slugParam = tryDecode(String(countryName));
+      let dest = null;
+      try {
+        const res = await fetch(`/api/destinations/${encodeURIComponent(slugParam)}`);
+        if (res.ok) dest = await res.json();
+      } catch (err) {
+        // ignore and fallback
+      }
 
-      let dest = await tryFetch(countryName);
       if (!dest) {
-        const cap = countryName.charAt(0).toUpperCase() + countryName.slice(1);
-        dest = await tryFetch(cap);
+        try {
+          const allRes = await fetch('/api/destinations');
+          if (allRes.ok) {
+            const all = await allRes.json();
+            if (Array.isArray(all)) {
+              dest = all.find((d: any) => String(d.slug || '').toLowerCase() === String(countryName).toLowerCase() || String(d.name || '').toLowerCase() === String(countryName).toLowerCase()) || null;
+            }
+          }
+        } catch (err) {
+          // ignore
+        }
       }
 
       if (!dest) {
