@@ -889,6 +889,23 @@ const ItineraryEditDialog = ({ itinerary, onClose, onSave, destinations }: { iti
         </div>
         <textarea value={description} onChange={e=>setDescription(e.target.value)} className="border border-slate-200 px-3 py-2 rounded-lg mt-4 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" placeholder="Short description" />
         <input value={highlights} onChange={e=>setHighlights(e.target.value)} className="border border-slate-200 px-3 py-2 rounded-lg mt-4 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" />
+
+        {/* Days editor - allow editing each day's activities (newline-separated) */}
+        <div className="mt-5">
+          <label className="block text-sm font-semibold text-slate-500 mb-2">Days (edit activities, one per line)</label>
+          {daysEdit.map((d, idx) => (
+            <div key={idx} className="mb-3 p-3 bg-slate-50/80 border border-slate-200 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-medium text-slate-600">Day {idx + 1}</div>
+                <div className="flex gap-2">
+                  <button type="button" className="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300" onClick={() => setDaysEdit(prev => { const copy = [...prev]; copy.splice(idx,1); return copy.length?copy:['']; })}>Remove</button>
+                </div>
+              </div>
+              <textarea value={d} onChange={e => setDaysEdit(prev => { const copy = [...prev]; copy[idx] = e.target.value; return copy; })} placeholder={`Activities for day ${idx+1} (one per line)`} className="w-full border border-slate-200 px-3 py-2 rounded-lg mt-2 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" rows={4} />
+            </div>
+          ))}
+          <button type="button" className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 text-white hover:shadow-lg transition" onClick={() => setDaysEdit(prev => [...prev, ''])}>Add Day</button>
+        </div>
         <div className="flex justify-end gap-2 mt-6">
           <button className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200" onClick={onClose}>Cancel</button>
           <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 text-white hover:shadow-lg transition" onClick={handleSave} disabled={saving}>{saving? 'Saving...' : 'Save'}</button>
