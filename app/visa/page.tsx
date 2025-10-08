@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaSearch, FaCheckCircle, FaClock, FaFileAlt, FaGlobe } from "react-icons/fa";
 // removed unused useRouter import
-import Image from "next/image";
+// using native <img> to avoid Next image optimizer for same-origin uploads
 
 interface VisaService {
   id: string;
@@ -169,12 +169,11 @@ const VisaPage = () => {
             >
               {/* Visa Image */}
               <div className="relative h-48 overflow-hidden">
-                <Image
+                <img
                   src={visa.image}
                   alt={visa.name}
-                  width={400}
-                  height={300}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 

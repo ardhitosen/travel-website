@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaArrowLeft } from "react-icons/fa";
-import Image from "next/image";
+// using native <img> to avoid Next image optimizer for same-origin uploads
 import { useRouter } from "next/navigation";
 
 interface ItineraryDay {
@@ -208,12 +208,11 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
                   transform: `translateY(${scrollY * 0.5}px)`,
                 }}
               >
-                <Image
+                <img
                   src={itineraryData.image || '/file.svg'}
                   alt={`${itineraryData.city} banner`}
-                  width={1200}
-                  height={800}
                   className="w-full h-full object-cover"
+                  loading="eager"
                 />
                 <div className="absolute inset-0 bg-black/40" />
               </motion.div>

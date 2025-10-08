@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import Image from "next/image";
+// use native <img> to avoid Next image optimizer for local assets
 
 const Header: React.FC = () => {
   return (
@@ -14,13 +14,12 @@ const Header: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <Image 
-            src="/img/JOS.png" 
-            alt="Jalan Overseas Logo" 
-            width={140} 
-            height={70} 
+          <img
+            src="/img/JOS.png"
+            alt="Jalan Overseas Logo"
             className="flex-shrink-0 w-[140px] h-[70px] sm:w-[160px] sm:h-[80px] lg:w-[180px] lg:h-[90px] object-contain"
-          />              
+            loading="eager"
+          />
         </motion.div>
         
         {/* Contact and Email Info - Desktop/Tablet */}

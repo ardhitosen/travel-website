@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaWhatsapp, FaChevronRight, FaArrowLeft } from "react-icons/fa";
-import Image from "next/image";
+// using native <img> to avoid Next image optimizer for same-origin uploads
 import { useRouter } from "next/navigation";
 
 interface CountryItinerary {
@@ -190,12 +190,11 @@ const CountryClient = ({ params }: CountryClientProps) => {
                 }}
               >
                 {/* Safe banner values */}
-                <Image
+                <img
                   src={countryData?.image || '/file.svg'}
                   alt={`${countryData?.name || countryName} banner`}
-                  width={1200}
-                  height={800}
                   className="w-full h-full object-cover"
+                  loading="eager"
                 />
                 <div className="absolute inset-0 bg-black/40" />
               </motion.div>
@@ -311,12 +310,11 @@ const CountryClient = ({ params }: CountryClientProps) => {
                         whileHover={{ scale: 1.1 }}
                         transition={{ duration: 0.6 }}
                       >
-                          <Image
+                          <img
                           src={itinerary.image || '/file.svg'}
                           alt={itinerary.name}
-                          width={400}
-                          height={300}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          loading="lazy"
                         />
                       </motion.div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

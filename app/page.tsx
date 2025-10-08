@@ -202,13 +202,11 @@ return (
                     {imageError[slide.image] ? (
                       <ImageFallback className="w-full h-full" />
                     ) : (
-                      <Image
+                      <img
                         src={slide.image}
                         alt={`Travel banner ${index + 1}`}
-                        fill
-                        className="object-cover"
-                        sizes="100vw"
-                        priority={index === 0}
+                        className="w-full h-full object-cover"
+                        loading={index === 0 ? 'eager' : 'lazy'}
                         onError={() => setImageError(prev => ({ ...prev, [slide.image]: true }))}
                       />
                     )}
@@ -387,12 +385,10 @@ return (
                        {imageError[promo.image] ? (
                          <ImageFallback className="w-full h-full" />
                        ) : (
-                         <Image
+                         <img
                            src={promo.image}
                            alt={promo.title}
-                           fill
-                           className="object-cover group-hover:scale-110 transition-transform duration-700"
-                           sizes="(max-width: 640px) 100vw, 50vw"
+                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                            loading="lazy"
                            onError={() => setImageError(prev => ({ ...prev, [promo.image]: true }))}
                          />
@@ -462,12 +458,10 @@ return (
                           {imageError[option.image] ? (
                          <ImageFallback className="w-full h-full" />
                        ) : (
-                         <Image
+                         <img
                               src={option.image}
                            alt={option.name}
-                           fill
-                           className="object-cover group-hover:scale-110 transition-transform duration-700 cursor-zoom-in"
-                           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-zoom-in"
                            loading="lazy"
                               onError={() => setImageError(prev => ({ ...prev, [option.image]: true }))}
                          />
@@ -569,17 +563,15 @@ return (
               {/* Banner */}
               <div className="relative h-56 md:h-80 w-full overflow-hidden rounded-t-3xl">
                   {imageError[selectedDestination.image] ? (
-                  <ImageFallback className="w-full h-full" />
-                ) : (
-                  <Image
-                      src={selectedDestination.image}
-                    alt={selectedDestination.name}
-                    fill
-                    className="object-cover object-center blur-sm scale-105"
-                    sizes="100vw"
-                      onError={() => setImageError(prev => ({ ...prev, [selectedDestination.image]: true }))}
-                  />
-                )}
+                    <ImageFallback className="w-full h-full" />
+                  ) : (
+                    <img
+                        src={selectedDestination.image}
+                      alt={selectedDestination.name}
+                      className="w-full h-full object-cover object-center blur-sm scale-105"
+                        onError={() => setImageError(prev => ({ ...prev, [selectedDestination.image]: true }))}
+                    />
+                  )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1679b1]/80 via-[#1679b1]/40 to-transparent" />
                   <div className="absolute inset-0 flex items:end md:items-center md:justify-center px-6 md:px-0 pb-6 md:pb-0">
                   <div className="max-w-3xl w-full mx-auto">
@@ -765,12 +757,11 @@ return (
                 {imageError[galleryImages[galleryIndex]] ? (
                   <ImageFallback className="w-full h-full rounded-2xl" />
                 ) : (
-                  <Image
+                  <img
                     src={galleryImages[galleryIndex]}
                     alt="Gallery image"
-                    fill
-                    className="object-contain rounded-2xl shadow-2xl"
-                    sizes="(max-width: 768px) 100vw, 80vw"
+                    className="w-full h-full object-contain rounded-2xl shadow-2xl"
+                    loading="lazy"
                     onError={() => setImageError(prev => ({ ...prev, [galleryImages[galleryIndex]]: true }))}
                   />
                 )}
@@ -858,12 +849,11 @@ return (
                 {imageError[selectedPromoImage] ? (
                   <ImageFallback className="w-full h-full rounded-2xl" />
                 ) : (
-                  <Image
+                  <img
                     src={selectedPromoImage}
                     alt="Promotion image"
-                    fill
-                    className="object-contain rounded-2xl shadow-2xl"
-                    sizes="(max-width: 768px) 100vw, 90vw"
+                    className="w-full h-full object-contain rounded-2xl shadow-2xl"
+                    loading="lazy"
                     onError={() => setImageError(prev => ({ ...prev, [selectedPromoImage]: true }))}
                   />
                 )}
