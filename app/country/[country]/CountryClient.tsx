@@ -150,7 +150,8 @@ const CountryClient = ({ params }: CountryClientProps) => {
 
   const handleViewItinerary = (itinerary: CountryItinerary) => {
     const idOrSlug = ((itinerary as unknown) as Record<string, unknown>).slug || itinerary.id;
-    router.push(`/itinerary/${countryName}/${encodeURIComponent(String(idOrSlug))}`);
+    // encode both country name and itinerary id/slug to safely handle spaces and special chars
+    router.push(`/itinerary/${encodeURIComponent(String(countryName))}/${encodeURIComponent(String(idOrSlug))}`);
   };
 
   return (

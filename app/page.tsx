@@ -495,10 +495,10 @@ return (
                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-auto flex-nowrap w-full">
                        <motion.button
                          className="bg-[#3b76ad] hover:bg-blue-700 text-white px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-base sm:text-lg md:text-xl transition-all min-w-0 whitespace-nowrap"
-                         onClick={(e: React.MouseEvent) => {
-                           e.stopPropagation();
-                           router.push(`/country/${option.name.toLowerCase()}`);
-                         }}
+                          onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation();
+                            router.push(`/country/${encodeURIComponent(option.name.toLowerCase())}`);
+                          }}
                          aria-label={`View details for ${option.name}`}
                          whileHover={{ scale: 1.05 }}
                          whileTap={{ scale: 0.95 }}
