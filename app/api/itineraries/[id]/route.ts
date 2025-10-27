@@ -42,12 +42,14 @@ export async function PUT(req: Request, context: RouteContext) {
         for (const d of days) {
           const obj = typeof d === 'object' && d !== null ? d as Record<string, unknown> : {};
           const dayNumber = Number(obj.dayNumber ?? obj.day ?? 0) || 0;
+          // Ensure activities is always present (default to empty array)
           const activities = Array.isArray(obj.activities) ? obj.activities : [];
           const title = typeof obj.title === 'string' ? obj.title : undefined;
           const description = typeof obj.description === 'string' ? obj.description : undefined;
           const imageUrl = typeof obj.imageUrl === 'string' ? obj.imageUrl : undefined;
           const createData: Record<string, unknown> = { dayNumber, itineraryId: id };
-          if (activities && activities.length) createData.activities = activities;
+          // Always include activities (may be empty) to satisfy Prisma validation when column exists
+          createData.activities = activities;
           if (title) createData.title = title;
           if (description) createData.description = description;
           if (imageUrl) createData.imageUrl = imageUrl;

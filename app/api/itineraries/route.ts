@@ -13,7 +13,9 @@ export async function GET(req: Request) {
   }
 
   try {
-    const itineraries = await prisma.itinerary.findMany({ include: { days: true, destination: true } });
+  // Temporarily avoid selecting nested `days` to prevent errors when production DB
+  // hasn't had the new columns applied yet (P2022). Re-enable after migrations.
+  const itineraries = await prisma.itinerary.findMany({ include: { destination: true } });
     return NextResponse.json(itineraries);
   } catch (err) {
     // In development, fall back to mock data so the dev server doesn't break for local contributors
@@ -66,8 +68,9 @@ export async function POST(req: Request) {
         const title = typeof obj.title === 'string' ? obj.title : undefined;
         const description = typeof obj.description === 'string' ? obj.description : undefined;
         const imageUrl = typeof obj.imageUrl === 'string' ? obj.imageUrl : undefined;
-        const createObj: Record<string, unknown> = { dayNumber };
-        if (activities && activities.length) createObj.activities = activities;
+  const createObj: Record<string, unknown> = { dayNumber };
+  // Always include activities (may be empty) to satisfy Prisma validation when the column exists
+  createObj.activities = activities;
         if (title) createObj.title = title;
         if (description) createObj.description = description;
         if (imageUrl) createObj.imageUrl = imageUrl;

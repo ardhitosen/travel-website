@@ -9,8 +9,9 @@ export async function GET() {
       return NextResponse.json(destinations);
     }
 
+    // Avoid fetching nested ItineraryDay rows until production DB has migrations applied
     const destinations = await prisma.destination.findMany({
-      include: { itineraries: { include: { days: true } }, gallery: true }
+      include: { itineraries: true, gallery: true }
     });
     return NextResponse.json(destinations);
   } catch (err) {
