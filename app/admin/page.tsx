@@ -760,7 +760,7 @@ const ItineraryForm = ({ onSubmit, destinations }: { onSubmit: (payload: any) =>
   const [preview, setPreview] = useState<string | null>(null);
   const [highlights, setHighlights] = useState('');
   const [destinationId, setDestinationId] = useState('');
-  const [days, setDays] = useState<string[]>(['']);
+  const [days, setDays] = useState<Array<{ title?: string; description?: string; file?: File | null; preview?: string | null }>>([{ title: '', description: '', file: null, preview: null }]);
   const [submitting, setSubmitting] = useState(false);
 
   const handle = async (e: React.FormEvent) => {
@@ -777,7 +777,19 @@ const ItineraryForm = ({ onSubmit, destinations }: { onSubmit: (payload: any) =>
       const r = await fetch('/api/upload', { method: 'POST', body: form });
       const j = await r.json().catch(() => ({} as any));
       uploadedUrl = j.url || j.secure_url || undefined;
-  const payload = { name, slug, city, duration, price, description, imageUrl: uploadedUrl || '', highlights: highlights.split(',').map(s=>s.trim()).filter(Boolean), destinationId: destinationId || null, days: days.map((d, idx)=>({ dayNumber: idx+1, activities: d.split('\n').map(s=>s.trim()).filter(Boolean) })) };
+      // upload per-day images if provided and build days payload (title/description/imageUrl)
+      const daysPayload = [] as any[];
+      for (let i = 0; i < days.length; i++) {
+        const d = days[i];
+        let dayImageUrl: string | undefined;
+        if (d.file) {
+          const fd = new FormData(); fd.append('file', d.file);
+          try { const r = await fetch('/api/upload', { method: 'POST', body: fd }); const j = await r.json().catch(()=>({} as any)); dayImageUrl = j.url || j.secure_url || undefined; } catch { dayImageUrl = undefined; }
+        }
+        daysPayload.push({ dayNumber: i+1, title: d.title || undefined, description: d.description || undefined, imageUrl: dayImageUrl, activities: [] });
+      }
+
+      const payload = { name, slug, city, duration, price, description, imageUrl: uploadedUrl || '', highlights: highlights.split(',').map(s=>s.trim()).filter(Boolean), destinationId: destinationId || null, days: daysPayload };
       await onSubmit(payload);
   setName(''); setSlug(''); setCity(''); setDuration(''); setPrice(''); setHighlights(''); setDestinationId('');
       setFile(null); setPreview(null); setDescription(''); setDays(['']);
@@ -808,14 +820,22 @@ const ItineraryForm = ({ onSubmit, destinations }: { onSubmit: (payload: any) =>
         <label className="block text-sm font-semibold text-slate-500 mb-2">Days (one per block, activities newline-separated)</label>
         {days.map((d, idx) => (
           <div key={idx} className="mb-3 p-3 bg-slate-50/80 border border-slate-200 rounded-xl">
-            <label className="text-sm font-medium text-slate-600">Day {idx+1}</label>
-            <textarea value={d} onChange={e => setDays(prev => { const copy = [...prev]; copy[idx] = e.target.value; return copy; })} placeholder={`Activities for day ${idx+1} (one per line)`} className="w-full border border-slate-200 px-3 py-2 rounded-lg mt-2 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" rows={3} />
-            <div className="flex gap-2 mt-3">
-              <button type="button" className="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300" onClick={() => setDays(prev => { const copy = [...prev]; copy.splice(idx,1); return copy.length?copy:['']; })}>Remove Day</button>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-slate-600">Day {idx+1}</div>
+              <div className="flex gap-2">
+                <button type="button" className="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300" onClick={() => setDays(prev => { const copy = [...prev]; copy.splice(idx,1); return copy.length?copy:[{ title: '', description: '', file: null, preview: null }]; })}>Remove</button>
+              </div>
+            </div>
+            <input value={d.title || ''} onChange={e => setDays(prev => { const copy = [...prev]; copy[idx] = { ...copy[idx], title: e.target.value }; return copy; })} placeholder={`Title for day ${idx+1}`} className="w-full border border-slate-200 px-3 py-2 rounded-lg mt-1 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" />
+            <textarea value={d.description || ''} onChange={e => setDays(prev => { const copy = [...prev]; copy[idx] = { ...copy[idx], description: e.target.value }; return copy; })} placeholder={`Description for day ${idx+1}`} className="w-full border border-slate-200 px-3 py-2 rounded-lg mt-2 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" rows={3} />
+            <div className="mt-2">
+              <label className="text-sm font-medium text-slate-500">Image for day {idx+1} (optional)</label>
+              <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0] || null; setDays(prev => { const copy = [...prev]; copy[idx] = { ...copy[idx], file: f, preview: f ? URL.createObjectURL(f) : null }; return copy; }); }} className="mt-2 block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-sky-50 file:px-4 file:py-2 file:text-sky-700 file:font-semibold hover:file:bg-sky-100 cursor-pointer" />
+              {d.preview && <img src={d.preview} alt={`day-${idx+1}`} className="w-40 h-28 object-cover rounded-xl border border-slate-200 mt-3" />}
             </div>
           </div>
         ))}
-        <button type="button" className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 text-white hover:shadow-lg transition" onClick={() => setDays(prev => [...prev, ''])}>Add Day</button>
+        <button type="button" className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 text-white hover:shadow-lg transition" onClick={() => setDays(prev => [...prev, { title: '', description: '', file: null, preview: null }])}>Add Day</button>
       </div>
       <div className="flex justify-end mt-6">
         <button className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold shadow-sm hover:shadow-lg transition disabled:opacity-60" disabled={submitting || !name || !destinationId || !file}>Add Itinerary</button>
@@ -836,19 +856,25 @@ const ItineraryEditDialog = ({ itinerary, onClose, onSave, destinations }: { iti
   const [description, setDescription] = useState(itinerary?.description || '');
   const [highlights, setHighlights] = useState((itinerary?.highlights || []).join(', '));
   const [destinationId, setDestinationId] = useState(itinerary?.destinationId || '');
-  const [daysEdit, setDaysEdit] = useState<string[]>(() => (itinerary?.days || []).map((d:any) => Array.isArray(d.activities)?d.activities.join('\n') : ''));
+  // daysEdit is an array of structured day objects: { title, description, imageUrl, file, preview }
+  const [daysEdit, setDaysEdit] = useState<Array<{ title?: string; description?: string; imageUrl?: string; file?: File | null; preview?: string | null }>>(() => {
+    if (!itinerary?.days) return [{ title: '', description: '', imageUrl: undefined, file: null, preview: null }];
+    return (itinerary.days || []).map((d:any) => ({ title: d.title || '', description: d.description || (Array.isArray(d.activities) ? d.activities.join('\n') : ''), imageUrl: d.imageUrl || undefined, file: null, preview: d.imageUrl || undefined }));
+  });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { setName(itinerary?.name || ''); setSlug(itinerary?.slug || ''); setCity(itinerary?.city || ''); setDuration(itinerary?.duration || ''); setPrice(itinerary?.price || ''); setImageUrl(itinerary?.imageUrl || ''); setDescription(itinerary?.description || ''); setHighlights((itinerary?.highlights || []).join(', ')); setDestinationId(itinerary?.destinationId || ''); }, [itinerary]);
 
-  useEffect(() => { setDaysEdit((itinerary?.days || []).map((d:any) => Array.isArray(d.activities)?d.activities.join('\n') : '')); }, [itinerary]);
+  useEffect(() => {
+    setDaysEdit((itinerary?.days || []).map((d:any) => ({ title: d.title || '', description: d.description || (Array.isArray(d.activities) ? d.activities.join('\n') : ''), imageUrl: d.imageUrl || undefined, file: null, preview: d.imageUrl || undefined })));
+  }, [itinerary]);
 
   if (!itinerary) return null;
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // upload file first if provided
+      // upload main file if provided
       let uploadedUrl: string | undefined;
       if (file) {
         const form = new FormData(); form.append('file', file);
@@ -857,7 +883,19 @@ const ItineraryEditDialog = ({ itinerary, onClose, onSave, destinations }: { iti
         uploadedUrl = j.url || j.secure_url || undefined;
       }
       const finalImage = uploadedUrl || imageUrl || undefined;
-      const payload = { name, slug, city, duration, price, description, imageUrl: finalImage, highlights: highlights.split(',').map((s:any)=>s.trim()).filter(Boolean), destinationId: destinationId || null, days: daysEdit.map((d, idx) => ({ dayNumber: idx+1, activities: d.split('\n').map((s:string)=>s.trim()).filter(Boolean) })) };
+      // upload per-day files if provided
+      const daysPayload: any[] = [];
+      for (let i = 0; i < daysEdit.length; i++) {
+        const d = daysEdit[i];
+        let dayImageUrl = d.imageUrl;
+        if (d.file) {
+          const fd = new FormData(); fd.append('file', d.file);
+          try { const r = await fetch('/api/upload', { method: 'POST', body: fd }); const j = await r.json().catch(()=>({} as any)); dayImageUrl = j.url || j.secure_url || dayImageUrl; } catch { /* ignore */ }
+        }
+        daysPayload.push({ dayNumber: i+1, title: d.title || undefined, description: d.description || undefined, imageUrl: dayImageUrl || undefined, activities: [] });
+      }
+
+      const payload = { name, slug, city, duration, price, description, imageUrl: finalImage, highlights: highlights.split(',').map((s:any)=>s.trim()).filter(Boolean), destinationId: destinationId || null, days: daysPayload };
       await onSave(payload);
       onClose();
     } catch (err) { alert('Failed'); } finally { setSaving(false); }
@@ -890,21 +928,27 @@ const ItineraryEditDialog = ({ itinerary, onClose, onSave, destinations }: { iti
         <textarea value={description} onChange={e=>setDescription(e.target.value)} className="border border-slate-200 px-3 py-2 rounded-lg mt-4 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" placeholder="Short description" />
         <input value={highlights} onChange={e=>setHighlights(e.target.value)} className="border border-slate-200 px-3 py-2 rounded-lg mt-4 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" />
 
-        {/* Days editor - allow editing each day's activities (newline-separated) */}
+        {/* Days editor - structured day objects with title/description/image */}
         <div className="mt-5">
-          <label className="block text-sm font-semibold text-slate-500 mb-2">Days (edit activities, one per line)</label>
+          <label className="block text-sm font-semibold text-slate-500 mb-2">Days (title / description / image)</label>
           {daysEdit.map((d, idx) => (
             <div key={idx} className="mb-3 p-3 bg-slate-50/80 border border-slate-200 rounded-xl">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm font-medium text-slate-600">Day {idx + 1}</div>
                 <div className="flex gap-2">
-                  <button type="button" className="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300" onClick={() => setDaysEdit(prev => { const copy = [...prev]; copy.splice(idx,1); return copy.length?copy:['']; })}>Remove</button>
+                  <button type="button" className="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300" onClick={() => setDaysEdit(prev => { const copy = [...prev]; copy.splice(idx,1); return copy.length?copy:[{ title: '', description: '', imageUrl: undefined, file: null, preview: null }]; })}>Remove</button>
                 </div>
               </div>
-              <textarea value={d} onChange={e => setDaysEdit(prev => { const copy = [...prev]; copy[idx] = e.target.value; return copy; })} placeholder={`Activities for day ${idx+1} (one per line)`} className="w-full border border-slate-200 px-3 py-2 rounded-lg mt-2 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" rows={4} />
+              <input value={d.title || ''} onChange={e => setDaysEdit(prev => { const copy = [...prev]; copy[idx] = { ...copy[idx], title: e.target.value }; return copy; })} placeholder={`Title for day ${idx+1}`} className="w-full border border-slate-200 px-3 py-2 rounded-lg mt-1 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" />
+              <textarea value={d.description || ''} onChange={e => setDaysEdit(prev => { const copy = [...prev]; copy[idx] = { ...copy[idx], description: e.target.value }; return copy; })} placeholder={`Description for day ${idx+1}`} className="w-full border border-slate-200 px-3 py-2 rounded-lg mt-2 focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" rows={3} />
+              <div className="mt-2">
+                <label className="text-sm font-medium text-slate-500">Image for day {idx+1} (optional)</label>
+                <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0] || null; setDaysEdit(prev => { const copy = [...prev]; copy[idx] = { ...copy[idx], file: f, preview: f ? URL.createObjectURL(f) : copy[idx].imageUrl || null }; return copy; }); }} className="mt-2 block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-sky-50 file:px-4 file:py-2 file:text-sky-700 file:font-semibold hover:file:bg-sky-100 cursor-pointer" />
+                {(d.preview || d.imageUrl) && <img src={d.preview || d.imageUrl} alt={`day-${idx+1}`} className="w-40 h-28 object-cover rounded-xl border border-slate-200 mt-3" />}
+              </div>
             </div>
           ))}
-          <button type="button" className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 text-white hover:shadow-lg transition" onClick={() => setDaysEdit(prev => [...prev, ''])}>Add Day</button>
+          <button type="button" className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 text-white hover:shadow-lg transition" onClick={() => setDaysEdit(prev => [...prev, { title: '', description: '', imageUrl: undefined, file: null, preview: null }])}>Add Day</button>
         </div>
         <div className="flex justify-end gap-2 mt-6">
           <button className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200" onClick={onClose}>Cancel</button>

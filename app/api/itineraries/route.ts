@@ -58,11 +58,20 @@ export async function POST(req: Request) {
 
     // create nested days if provided
     if (Array.isArray(days) && days.length) {
+      // Accept either legacy { activities: [] } or new { title, description, imageUrl } shape
       const mappedDays = days.map((d) => {
         const obj = typeof d === 'object' && d !== null ? d as Record<string, unknown> : {};
         const dayNumber = Number(obj.dayNumber ?? obj.day ?? 0) || 0;
         const activities = Array.isArray(obj.activities) ? obj.activities : [];
-        return { dayNumber, activities };
+        const title = typeof obj.title === 'string' ? obj.title : undefined;
+        const description = typeof obj.description === 'string' ? obj.description : undefined;
+        const imageUrl = typeof obj.imageUrl === 'string' ? obj.imageUrl : undefined;
+        const createObj: Record<string, unknown> = { dayNumber };
+        if (activities && activities.length) createObj.activities = activities;
+        if (title) createObj.title = title;
+        if (description) createObj.description = description;
+        if (imageUrl) createObj.imageUrl = imageUrl;
+        return createObj;
       });
       (data as Record<string, unknown>).days = { create: mappedDays };
     }

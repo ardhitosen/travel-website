@@ -43,7 +43,15 @@ export async function PUT(req: Request, context: RouteContext) {
           const obj = typeof d === 'object' && d !== null ? d as Record<string, unknown> : {};
           const dayNumber = Number(obj.dayNumber ?? obj.day ?? 0) || 0;
           const activities = Array.isArray(obj.activities) ? obj.activities : [];
-          await tx.itineraryDay.create({ data: { dayNumber, activities, itineraryId: id } });
+          const title = typeof obj.title === 'string' ? obj.title : undefined;
+          const description = typeof obj.description === 'string' ? obj.description : undefined;
+          const imageUrl = typeof obj.imageUrl === 'string' ? obj.imageUrl : undefined;
+          const createData: Record<string, unknown> = { dayNumber, itineraryId: id };
+          if (activities && activities.length) createData.activities = activities;
+          if (title) createData.title = title;
+          if (description) createData.description = description;
+          if (imageUrl) createData.imageUrl = imageUrl;
+          await tx.itineraryDay.create({ data: createData as any });
         }
       }
       return updated;

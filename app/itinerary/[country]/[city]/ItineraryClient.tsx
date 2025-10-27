@@ -8,6 +8,10 @@ import { useRouter } from "next/navigation";
 interface ItineraryDay {
   day: number;
   activities: string[];
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  date?: string;
 }
 
 interface CountryItinerary {
@@ -114,7 +118,11 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
         const dd = d as Record<string, unknown>;
         const dayNum = (dd.dayNumber ?? dd.day ?? 0) as number | undefined;
         const activities = Array.isArray(dd.activities) ? (dd.activities as unknown[]).map(String) : [];
-        return { day: Number(dayNum || 0), activities };
+        const title = typeof dd.title === 'string' ? dd.title : undefined;
+        const description = typeof dd.description === 'string' ? dd.description : undefined;
+        const imageUrl = typeof dd.imageUrl === 'string' ? dd.imageUrl : undefined;
+        const date = dd.date ? (typeof dd.date === 'string' ? dd.date : String(dd.date)) : undefined;
+        return { day: Number(dayNum || 0), activities, title, description, imageUrl, date };
       }) : [];
 
       const highlights = match.highlights && Array.isArray(match.highlights)
@@ -159,6 +167,15 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
 
   const handleBackToHome = () => {
     router.push('/');
+  };
+  const formatDate = (v?: string) => {
+    if (!v) return '';
+    try {
+      const d = new Date(v);
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return String(v);
+    }
   };
   // Avoid rendering when data is not ready to prevent runtime errors
   if (loading) {
@@ -350,36 +367,56 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
                 viewport={{ once: true }}
               >
                 <h3 className="text-3xl font-bold text-gray-800 text-center mb-12">Daily Itinerary</h3>
-                
-                {itineraryData.activities.map((day, idx) => (
-                  <motion.div 
-                    key={day.day} 
-                    className="border border-gray-200 rounded-3xl p-8 bg-white shadow-lg"
-                    initial={{ y: 30, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.8 + idx * 0.2, duration: 0.6 }}
-                    viewport={{ once: true }}
-                  >
-                    <h4 className="text-2xl font-bold text-[#3b76ad] mb-6">Day {day.day}</h4>
-                    <ul className="space-y-4">
-                      {day.activities.map((activity, activityIdx) => (
-                        <motion.li 
-                          key={activityIdx} 
-                          className="flex items-start text-gray-700"
-                          initial={{ x: -20, opacity: 0 }}
-                          whileInView={{ x: 0, opacity: 1 }}
-                          transition={{ delay: 1.0 + idx * 0.2 + activityIdx * 0.1, duration: 0.4 }}
-                          viewport={{ once: true }}
-                        >
-                          <svg className="h-5 w-5 text-[#3b76ad] mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className="font-medium">{activity}</span>
-                        </motion.li>
-                      ))}
-                    </ul>
-                  </motion.div>
-                ))}
+                <div className="relative">
+                  {/* single vertical line connecting all day nodes */}
+                  <div className="hidden md:block absolute left-28 top-0 bottom-0 w-px" style={{ backgroundColor: 'rgba(59,118,173,0.12)' }} />
+
+                  <div className="space-y-10">
+                    {itineraryData.activities.map((day, idx) => (
+                      <motion.div
+                        key={day.day}
+                        className="relative md:flex md:items-start md:gap-6 md:pl-36"
+                        initial={{ y: 30, opacity: 0 }}
+                        whileInView={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.8 + idx * 0.12, duration: 0.6 }}
+                        viewport={{ once: true }}
+                      >
+                        {/* dot that sits on the central line */}
+                        <div className="absolute md:left-24 left-8 md:top-6 top-0 w-3 h-3 rounded-full border-2 border-white z-10" style={{ backgroundColor: '#3b76ad' }} />
+
+                        {/* date pill */}
+                        <div className="absolute md:left-0 left-0 md:top-0 top-6">
+                          <div className="text-white px-5 py-2 rounded-xl text-sm font-semibold shadow-md" style={{ backgroundColor: '#3b76ad' }}>Day {day.day}{day.date ? `: ${formatDate(day.date)}` : ''}</div>
+                        </div>
+
+                        {/* content card */}
+                        <div className="w-full bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-start gap-6 md:ml-8">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#6b7280]">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="#6b7280" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <circle cx="12" cy="9" r="2.5" stroke="#6b7280" strokeWidth="1.2"/>
+                              </svg>
+                              <h4 className="text-2xl font-bold text-[#3b76ad] mb-0">{day.title || `Day ${day.day}`}</h4>
+                            </div>
+                            <div className="text-gray-700 mb-4 text-base leading-relaxed">
+                              {day.description ? (
+                                <p>{day.description}</p>
+                              ) : (
+                                <p>{(day.activities || []).join('. ')}</p>
+                              )}
+                            </div>
+                          </div>
+                          {day.imageUrl && (
+                            <div className="w-56 flex-shrink-0">
+                              <img src={day.imageUrl} alt={`Day ${day.day} image`} className="w-full h-40 object-cover rounded-lg shadow-inner" />
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
               </motion.div>
 
               {/* Highlights */}

@@ -238,16 +238,16 @@ return (
         </section>
 
           {/* Welcome Title */}
-        <section className="relative px-4 bg-white py-6 sm:py-2 mt-2 sm:mt-4">
+  <section className="relative px-2 bg-white py-3 sm:py-2 mt-1 sm:mt-2">
           <div className="w-full">
             <motion.div 
-              className="text-center mb-2 px-5"
+              className="text-center mb-1 px-3"
               initial={{ y: 30, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <span className="inline-block font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl px-8 sm:px-12 py-4 sm:py-8 md:py-10 lg:py-2 tracking-wide">
+              <span className="inline-block font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl px-4 sm:px-6 py-2 sm:py-3 md:py-4 lg:py-1 tracking-wide">
                 <span className="block md:inline text-[#e0663e]">Welcome To</span>
                 <span className="block md:inline md:ml-6 text-[#3b76ad]">Jalan Overseas</span>
               </span>
@@ -265,8 +265,8 @@ return (
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
             >
-              <motion.p
-                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-600 font-light mb-8 sm:mb-12 max-w-5xl mx-auto leading-relaxed"
+        <motion.p
+          className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-600 font-light mb-4 sm:mb-6 max-w-5xl mx-auto leading-relaxed"
                 initial={{ y: 30, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.8 }}
@@ -347,14 +347,14 @@ return (
            <div className="w-full">
              {/* Promotional Images Section */}
              <motion.div
-               className="mb-16 sm:mb-20"
+               className="mb-8 sm:mb-10"
                initial={{ opacity: 0, y: 30 }}
                whileInView={{ opacity: 1, y: 0 }}
                transition={{ duration: 0.8 }}
                viewport={{ once: true }}
              >
                <motion.h3
-                 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-gray-800 mb-8 sm:mb-12 text-center"
+                 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-800 mb-4 sm:mb-6 text-center"
                  initial={{ opacity: 0, scale: 0.9 }}
                  whileInView={{ opacity: 1, scale: 1 }}
                  transition={{ duration: 0.6, delay: 0.2 }}
@@ -406,7 +406,7 @@ return (
              </motion.div>
 
              <motion.h2 
-               className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-gray-800 mb-8 sm:mb-12 text-center"
+               className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-800 mb-8 sm:mb-12 text-center"
                initial={{ y: 30, opacity: 0 }}
                whileInView={{ y: 0, opacity: 1 }}
                transition={{ duration: 0.8 }}
@@ -415,7 +415,7 @@ return (
                Popular Destinations
              </motion.h2>
              <motion.div
-               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8 px-3 sm:px-8"
+               className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 px-2 sm:px-4"
                initial="hidden"
                whileInView="visible"
                viewport={{ once: true }}
@@ -451,7 +451,7 @@ return (
                  >
                    <div className="relative overflow-hidden">
                      <motion.div
-                       className="relative w-full h-48 sm:h-80 md:h-[400px] overflow-hidden"
+                       className="relative w-full h-44 sm:h-48 md:h-40 lg:h-44 overflow-hidden"
                           onClick={() => handleOpenGallery(galleryUrls, 0)}
                        whileHover={{ scale: 1.1 }}
                        transition={{ duration: 0.6 }}
@@ -470,32 +470,44 @@ return (
                      </motion.div>
                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                    </div>
-                   <div className="p-4 sm:p-8 flex flex-col flex-1 bg-white">
-                     <h3 className="text-xl sm:text-3xl md:text-4xl font-bold text-[#3b76ad] mb-2 sm:mb-3">
+                   <div className="p-2 sm:p-4 flex flex-col flex-1 bg-white">
+                     <h3 className="text-sm sm:text-base md:text-base font-extrabold mb-1 sm:mb-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1679b1] to-[#f05b2d] tracking-tight">
                        {option.name}
                      </h3>
-                     <p className="text-gray-600 mb-3 sm:mb-4 flex-1 text-base sm:text-xl md:text-2xl font-light">
+                     <p className="text-gray-600 mb-2 sm:mb-3 flex-1 text-xs sm:text-sm md:text-sm font-normal">
                        {option.description}
                      </p>
                         {highlights && highlights.length > 0 && (
-                       <ul className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
-                            {highlights.map((h, i) => (
-                           <motion.li 
-                             key={i} 
-                             className="bg-blue-50 text-[#3b76ad] text-xs sm:text-sm font-medium px-2 sm:px-4 py-1 sm:py-2 rounded-full border border-blue-200"
-                             initial={{ opacity: 0, scale: 0.8 }}
-                             whileInView={{ opacity: 1, scale: 1 }}
-                             transition={{ delay: 0.2 + i * 0.1 }}
-                             viewport={{ once: true }}
-                           >
-                             {h}
-                           </motion.li>
-                         ))}
-                       </ul>
+                       // show up to 4 tags and a "+N more" indicator when there are extras
+                       (() => {
+                         const displayed = highlights.slice(0, 4);
+                         const extra = Math.max(0, highlights.length - displayed.length);
+                         return (
+                           <ul className="flex flex-wrap gap-2 sm:gap-3 mb-3 sm:mb-4 items-center">
+                             {displayed.map((h, i) => (
+                               <motion.li
+                                 key={i}
+                                 className="bg-blue-50 text-[#3b76ad] text-[11px] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-blue-200"
+                                 initial={{ opacity: 0, scale: 0.8 }}
+                                 whileInView={{ opacity: 1, scale: 1 }}
+                                 transition={{ delay: 0.15 + i * 0.08 }}
+                                 viewport={{ once: true }}
+                               >
+                                 {h}
+                               </motion.li>
+                             ))}
+                             {extra > 0 && (
+                               <li className="bg-gray-100 text-gray-600 text-[11px] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-gray-200">
+                                 +{extra} more
+                               </li>
+                             )}
+                           </ul>
+                         );
+                       })()
                      )}
                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-auto flex-nowrap w-full">
                        <motion.button
-                         className="bg-[#3b76ad] hover:bg-blue-700 text-white px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-base sm:text-lg md:text-xl transition-all min-w-0 whitespace-nowrap"
+                         className="bg-[#3b76ad] hover:bg-blue-700 text-white px-2 sm:px-3 md:px-4 py-2 sm:py-2 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-xs sm:text-sm md:text-sm transition-all min-w-0 whitespace-nowrap"
                           onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             // prefer slug property when provided by API, otherwise fallback to name
@@ -511,7 +523,7 @@ return (
                          <span className="truncate text-xs sm:text-sm">Detail</span>
                        </motion.button>
                        <motion.button
-                         className="border-2 border-[#3b76ad] text-[#3b76ad] hover:bg-blue-50 px-3 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-sm sm:text-base md:text-lg transition-all bg-white min-w-0 whitespace-nowrap"
+                         className="border-2 border-[#3b76ad] text-[#3b76ad] hover:bg-blue-50 px-2 sm:px-3 md:px-4 py-2 sm:py-2 rounded-lg sm:rounded-xl flex-1 flex items-center justify-center gap-1 sm:gap-2 font-semibold shadow-lg text-xs sm:text-sm md:text-sm transition-all bg-white min-w-0 whitespace-nowrap"
                          onClick={(e: React.MouseEvent) => {
                            e.stopPropagation();
                            handleBookTrip(option);

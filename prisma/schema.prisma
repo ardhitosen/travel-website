@@ -74,6 +74,9 @@ model ItineraryDay {
   id          Int        @id @default(autoincrement())
   dayNumber   Int
   activities  Json
+  title       String?
+  description String?
+  imageUrl    String?
   itinerary   Itinerary  @relation(fields: [itineraryId], references: [id])
   itineraryId Int
 }
