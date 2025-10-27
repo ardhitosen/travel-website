@@ -863,11 +863,33 @@ const ItineraryEditDialog = ({ itinerary, onClose, onSave, destinations }: { iti
   });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { setName(itinerary?.name || ''); setSlug(itinerary?.slug || ''); setCity(itinerary?.city || ''); setDuration(itinerary?.duration || ''); setPrice(itinerary?.price || ''); setImageUrl(itinerary?.imageUrl || ''); setDescription(itinerary?.description || ''); setHighlights((itinerary?.highlights || []).join(', ')); setDestinationId(itinerary?.destinationId || ''); }, [itinerary]);
-
   useEffect(() => {
-    setDaysEdit((itinerary?.days || []).map((d:any) => ({ title: d.title || '', description: d.description || (Array.isArray(d.activities) ? d.activities.join('\n') : ''), imageUrl: d.imageUrl || undefined, file: null, preview: d.imageUrl || undefined })));
-  }, [itinerary]);
+    let mounted = true;
+    // fetch full itinerary (including days) when opening the edit dialog so admin can edit all days
+    (async () => {
+      if (!itinerary?.id) return;
+      try {
+        const res = await fetch(`/api/itineraries/${itinerary.id}`);
+        if (!res.ok) {
+          // fallback to the passed-in itinerary object
+          if (!mounted) return;
+          setName(itinerary?.name || ''); setSlug(itinerary?.slug || ''); setCity(itinerary?.city || ''); setDuration(itinerary?.duration || ''); setPrice(itinerary?.price || ''); setImageUrl(itinerary?.imageUrl || ''); setDescription(itinerary?.description || ''); setHighlights((itinerary?.highlights || []).join(', ')); setDestinationId(itinerary?.destinationId || '');
+          setDaysEdit((itinerary?.days || []).map((d:any) => ({ title: d.title || '', description: d.description || (Array.isArray(d.activities) ? d.activities.join('\n') : ''), imageUrl: d.imageUrl || undefined, file: null, preview: d.imageUrl || undefined })));
+          return;
+        }
+        const data = await res.json();
+        if (!mounted) return;
+        setName(data.name || ''); setSlug(data.slug || ''); setCity(data.city || ''); setDuration(data.duration || ''); setPrice(data.price || ''); setImageUrl(data.imageUrl || ''); setDescription(data.description || ''); setHighlights((data.highlights || []).join ? (data.highlights || []).join(', ') : (data.highlights || '')); setDestinationId(data.destinationId || '');
+        setDaysEdit((data.days || []).map((d:any) => ({ title: d.title || '', description: d.description || (Array.isArray(d.activities) ? d.activities.join('\n') : ''), imageUrl: d.imageUrl || undefined, file: null, preview: d.imageUrl || undefined })));
+      } catch (err) {
+        // fallback to passed itinerary
+        if (!mounted) return;
+        setName(itinerary?.name || ''); setSlug(itinerary?.slug || ''); setCity(itinerary?.city || ''); setDuration(itinerary?.duration || ''); setPrice(itinerary?.price || ''); setImageUrl(itinerary?.imageUrl || ''); setDescription(itinerary?.description || ''); setHighlights((itinerary?.highlights || []).join(', ')); setDestinationId(itinerary?.destinationId || '');
+        setDaysEdit((itinerary?.days || []).map((d:any) => ({ title: d.title || '', description: d.description || (Array.isArray(d.activities) ? d.activities.join('\n') : ''), imageUrl: d.imageUrl || undefined, file: null, preview: d.imageUrl || undefined })));
+      }
+    })();
+    return () => { mounted = false; };
+  }, [itinerary?.id]);
 
   if (!itinerary) return null;
 

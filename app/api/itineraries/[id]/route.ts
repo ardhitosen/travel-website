@@ -91,3 +91,19 @@ export async function DELETE(_: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Failed to delete itinerary' }, { status: 500 });
   }
 }
+
+export async function GET(_: Request, context: RouteContext) {
+  const params = context?.params;
+  const id = Number(params?.id);
+  if (Number.isNaN(id) || id <= 0) {
+    return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+  }
+  try {
+    const itinerary = await prisma.itinerary.findUnique({ where: { id }, include: { days: true, destination: true } });
+    if (!itinerary) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json(itinerary);
+  } catch (err) {
+    console.error('Failed to fetch itinerary', err);
+    return NextResponse.json({ error: 'Failed to fetch itinerary' }, { status: 500 });
+  }
+}
