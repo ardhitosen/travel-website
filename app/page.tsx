@@ -247,7 +247,7 @@ return (
               transition={{ delay: 0.1, duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <span className="inline-block font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl px-4 sm:px-6 tracking-wide">
+              <span className="inline-block font-extrabold text-4xl py-5 sm:text-5xl md:text-6xl lg:text-7xl px-4 sm:px-6 tracking-wide">
                 <span className="block md:inline text-[#e0663e]">Welcome To</span>
                 <span className="block md:inline md:ml-6 text-[#3b76ad]">Jalan Overseas</span>
               </span>
