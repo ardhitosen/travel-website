@@ -790,9 +790,9 @@ const ItineraryForm = ({ onSubmit, destinations }: { onSubmit: (payload: any) =>
       }
 
       const payload = { name, slug, city, duration, price, description, imageUrl: uploadedUrl || '', highlights: highlights.split(',').map(s=>s.trim()).filter(Boolean), destinationId: destinationId || null, days: daysPayload };
-      await onSubmit(payload);
+    await onSubmit(payload);
   setName(''); setSlug(''); setCity(''); setDuration(''); setPrice(''); setHighlights(''); setDestinationId('');
-      setFile(null); setPreview(null); setDescription(''); setDays(['']);
+    setFile(null); setPreview(null); setDescription(''); setDays([{ title: '', description: '', file: null, preview: null }]);
     } finally { setSubmitting(false); }
   };
 
