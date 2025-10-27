@@ -247,7 +247,7 @@ return (
               transition={{ delay: 0.1, duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <span className="inline-block font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl px-4 sm:px-6 py-2 sm:py-3 md:py-4 lg:py-1 tracking-wide">
+              <span className="inline-block font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl px-4 sm:px-6 tracking-wide">
                 <span className="block md:inline text-[#e0663e]">Welcome To</span>
                 <span className="block md:inline md:ml-6 text-[#3b76ad]">Jalan Overseas</span>
               </span>
@@ -256,7 +256,7 @@ return (
         </section>
 
         {/* Welcome Section */}
-        <section className="relative min-h-[100svh] px-4 bg-white flex items-center pt-6 md:pt-0" id="welcome-destinations">
+        <section className="relative min-h-[70svh] px-4 bg-white flex items-center pt-6 md:pt-0" id="welcome-destinations">
           <div className="w-full">
             <motion.div
               className="text-center mb-16"
@@ -266,7 +266,7 @@ return (
               viewport={{ once: true }}
             >
         <motion.p
-          className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-600 font-light mb-4 sm:mb-6 max-w-5xl mx-auto leading-relaxed"
+          className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-600 font-light mb-2 max-w-5xl mx-auto leading-relaxed"
                 initial={{ y: 30, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.8 }}
@@ -343,7 +343,7 @@ return (
          </section>
 
           {/* Destinations */}
-         <section className="relative py-20 px-4 bg-white">
+         <section className="relative py-14 px-4 bg-white">
            <div className="w-full">
              {/* Promotional Images Section */}
              <motion.div
@@ -362,7 +362,7 @@ return (
                >
                  Special Promotions
                </motion.h3>
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 max-w-4xl py-3 mx-auto">
                  {promoItems.map((promo, idx) => (
                    <motion.div
                      key={promo.id}
@@ -406,7 +406,7 @@ return (
              </motion.div>
 
              <motion.h2 
-               className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-800 mb-8 sm:mb-12 text-center"
+               className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-800 mb-8 sm:mb-12 text-center"
                initial={{ y: 30, opacity: 0 }}
                whileInView={{ y: 0, opacity: 1 }}
                transition={{ duration: 0.8 }}
