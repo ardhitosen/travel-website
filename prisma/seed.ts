@@ -117,58 +117,66 @@ async function main() {
   // Create Korea destination if Destination table exists
   let korea: any = null;
   if (await tableExists('Destination')) {
-    korea = await prisma.destination.create({
-    data: {
-      name: "Korea",
-      description: "Explore the vibrant city of Seoul and experience the perfect blend of ancient traditions and modern innovation.",
-      imageUrl: "https://images.unsplash.com/photo-1570191913384-7b4ff11716e7?q=80&w=687&auto=format&fit=crop",
-      highlights: ["Palaces & Temples", "Modern City Life", "Street Food", "K-Pop Culture", "Traditional Markets"] as any,
-      badge: "Popular",
-      gallery: {
-        create: [
-          { imageUrl: "https://images.unsplash.com/photo-1535189043414-47a3c49a0bed?q=80&w=1631&auto=format&fit=crop", position: 0 },
-          { imageUrl: "https://images.unsplash.com/photo-1526199119161-4be1e3368d52?q=80&w=1074&auto=format&fit=crop", position: 1 },
-          { imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=1170&auto=format&fit=crop", position: 2 },
-        ],
+    // Upsert so seed is idempotent and won't error if run multiple times
+    korea = await prisma.destination.upsert({
+      where: { name: 'Korea' },
+      create: {
+        name: "Korea",
+        description: "Explore the vibrant city of Seoul and experience the perfect blend of ancient traditions and modern innovation.",
+        imageUrl: "https://images.unsplash.com/photo-1570191913384-7b4ff11716e7?q=80&w=687&auto=format&fit=crop",
+        highlights: ["Palaces & Temples", "Modern City Life", "Street Food", "K-Pop Culture", "Traditional Markets"] as any,
+        badge: "Popular",
+        gallery: {
+          create: [
+            { imageUrl: "https://images.unsplash.com/photo-1535189043414-47a3c49a0bed?q=80&w=1631&auto=format&fit=crop", position: 0 },
+            { imageUrl: "https://images.unsplash.com/photo-1526199119161-4be1e3368d52?q=80&w=1074&auto=format&fit=crop", position: 1 },
+            { imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=1170&auto=format&fit=crop", position: 2 },
+          ],
+        },
+        itineraries: {
+          create: [
+            {
+              slug: "seoul",
+              name: "Seoul Adventure",
+              city: "Seoul",
+              duration: "1 Week",
+              price: "$280",
+              imageUrl: "https://images.unsplash.com/photo-1570191913384-7b4ff11716e7?q=80&w=687&auto=format&fit=crop",
+              description: "Experience the vibrant city life of Seoul with its palaces, street food, and modern attractions.",
+              highlights: ["Palaces", "Street Food", "Shopping", "K-Pop"] as any,
+              days: {
+                create: [
+                  { dayNumber: 1, activities: ["Arrive in Seoul", "Visit Gyeongbokgung Palace", "Explore Bukchon Hanok Village", "Dinner in Myeong-dong"] as any, title: null, description: null, imageUrl: null },
+                  { dayNumber: 2, activities: ["Visit N Seoul Tower", "Lunch in Hongdae", "Shopping in Gangnam", "Dinner in Itaewon"] as any, title: null, description: null, imageUrl: null },
+                  { dayNumber: 3, activities: ["DMZ Tour", "Korean War Memorial", "Insadong Cultural Street", "Traditional Tea Ceremony"] as any, title: null, description: null, imageUrl: null },
+                ],
+              },
+            },
+            {
+              slug: "busan",
+              name: "Busan Coastal Escape",
+              city: "Busan",
+              duration: "4 Days",
+              price: "$180",
+              imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=1170&auto=format&fit=crop",
+              description: "Discover Busan's beautiful beaches, temples, and fresh seafood.",
+              highlights: ["Beaches", "Temples", "Seafood", "Markets"] as any,
+              days: {
+                create: [
+                  { dayNumber: 1, activities: ["Arrive in Busan", "Haeundae Beach", "Dongbaekseom Island", "Seafood dinner"] as any, title: null, description: null, imageUrl: null },
+                  { dayNumber: 2, activities: ["Haedong Yonggungsa Temple", "Gamcheon Culture Village", "Jagalchi Fish Market"] as any, title: null, description: null, imageUrl: null },
+                ],
+              },
+            },
+          ],
+        }
       },
-      itineraries: {
-        create: [
-          {
-            slug: "seoul",
-            name: "Seoul Adventure",
-            city: "Seoul",
-            duration: "1 Week",
-            price: "$280",
-            imageUrl: "https://images.unsplash.com/photo-1570191913384-7b4ff11716e7?q=80&w=687&auto=format&fit=crop",
-            description: "Experience the vibrant city life of Seoul with its palaces, street food, and modern attractions.",
-            highlights: ["Palaces", "Street Food", "Shopping", "K-Pop"] as any,
-            days: {
-              create: [
-                { dayNumber: 1, activities: ["Arrive in Seoul", "Visit Gyeongbokgung Palace", "Explore Bukchon Hanok Village", "Dinner in Myeong-dong"] as any },
-                { dayNumber: 2, activities: ["Visit N Seoul Tower", "Lunch in Hongdae", "Shopping in Gangnam", "Dinner in Itaewon"] as any },
-                { dayNumber: 3, activities: ["DMZ Tour", "Korean War Memorial", "Insadong Cultural Street", "Traditional Tea Ceremony"] as any },
-              ],
-            },
-          },
-          {
-            slug: "busan",
-            name: "Busan Coastal Escape",
-            city: "Busan",
-            duration: "4 Days",
-            price: "$180",
-            imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=1170&auto=format&fit=crop",
-            description: "Discover Busan's beautiful beaches, temples, and fresh seafood.",
-            highlights: ["Beaches", "Temples", "Seafood", "Markets"] as any,
-            days: {
-              create: [
-                { dayNumber: 1, activities: ["Arrive in Busan", "Haeundae Beach", "Dongbaekseom Island", "Seafood dinner"] as any },
-                { dayNumber: 2, activities: ["Haedong Yonggungsa Temple", "Gamcheon Culture Village", "Jagalchi Fish Market"] as any },
-              ],
-            },
-          },
-        ],
+      update: {
+        description: "Explore the vibrant city of Seoul and experience the perfect blend of ancient traditions and modern innovation.",
+        imageUrl: "https://images.unsplash.com/photo-1570191913384-7b4ff11716e7?q=80&w=687&auto=format&fit=crop",
+        highlights: ["Palaces & Temples", "Modern City Life", "Street Food", "K-Pop Culture", "Traditional Markets"] as any,
+        badge: "Popular",
       }
-    },
     });
   } else {
     console.warn('Skipping creating Destination entries: Destination table missing');
@@ -223,8 +231,9 @@ async function main() {
   }
 
   // Create Japan destination
-  const japan = await prisma.destination.create({
-    data: {
+  const japan = await prisma.destination.upsert({
+    where: { name: 'Japan' },
+    create: {
       name: "Japan",
       description: "Experience the perfect harmony of ancient traditions and cutting-edge technology in the Land of the Rising Sun.",
       imageUrl: "https://plus.unsplash.com/premium_photo-1661964177687-57387c2cbd14?q=80&w=1170&auto=format&fit=crop",
@@ -250,9 +259,9 @@ async function main() {
             highlights: ["Shrines", "Fashion", "Technology", "Food"] as any,
             days: {
               create: [
-                { dayNumber: 1, activities: ["Arrive in Tokyo", "Visit Tokyo Tower", "Lunch in Shibuya", "Explore Harajuku", "Dinner in Shinjuku"] as any },
-                { dayNumber: 2, activities: ["Visit Asakusa", "Lunch in Tsukiji", "Visit Meiji Shrine", "Dinner in Roppongi"] as any },
-                { dayNumber: 3, activities: ["Disneyland Tokyo", "Evening in Odaiba", "Tokyo Skytree"] as any },
+                { dayNumber: 1, activities: ["Arrive in Tokyo", "Visit Tokyo Tower", "Lunch in Shibuya", "Explore Harajuku", "Dinner in Shinjuku"] as any, title: null, description: null, imageUrl: null },
+                { dayNumber: 2, activities: ["Visit Asakusa", "Lunch in Tsukiji", "Visit Meiji Shrine", "Dinner in Roppongi"] as any, title: null, description: null, imageUrl: null },
+                { dayNumber: 3, activities: ["Disneyland Tokyo", "Evening in Odaiba", "Tokyo Skytree"] as any, title: null, description: null, imageUrl: null },
               ],
             },
           },
@@ -267,14 +276,20 @@ async function main() {
             highlights: ["Temples", "Gardens", "Geisha", "Traditional Crafts"] as any,
             days: {
               create: [
-                { dayNumber: 1, activities: ["Arrive in Kyoto", "Kinkaku-ji Temple", "Ryoan-ji Temple", "Traditional tea ceremony"] as any },
-                { dayNumber: 2, activities: ["Fushimi Inari Shrine", "Gion District", "Geisha performance", "Kaiseki dinner"] as any },
+                { dayNumber: 1, activities: ["Arrive in Kyoto", "Kinkaku-ji Temple", "Ryoan-ji Temple", "Traditional tea ceremony"] as any, title: null, description: null, imageUrl: null },
+                { dayNumber: 2, activities: ["Fushimi Inari Shrine", "Gion District", "Geisha performance", "Kaiseki dinner"] as any, title: null, description: null, imageUrl: null },
               ],
             },
           },
         ],
       },
     },
+    update: {
+      description: "Experience the perfect harmony of ancient traditions and cutting-edge technology in the Land of the Rising Sun.",
+      imageUrl: "https://plus.unsplash.com/premium_photo-1661964177687-57387c2cbd14?q=80&w=1170&auto=format&fit=crop",
+      highlights: ["Cherry Blossoms", "Historic Shrines", "Modern Technology", "Traditional Culture", "Amazing Cuisine"] as any,
+      badge: "Trending",
+    }
   });
 
   // Japan visa types (created separately because VisaType.destination is a string)
@@ -307,8 +322,9 @@ async function main() {
   
 
   // Create Thailand destination
-  const thailand = await prisma.destination.create({
-    data: {
+  const thailand = await prisma.destination.upsert({
+    where: { name: 'Thailand' },
+    create: {
       name: "Thailand",
       description: "Discover the land of smiles with its stunning beaches, ancient temples, and vibrant street food culture.",
       imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1170&auto=format&fit=crop",
@@ -334,8 +350,8 @@ async function main() {
             highlights: ["Temples", "Markets", "Street Food", "Nightlife"] as any,
             days: {
               create: [
-                { dayNumber: 1, activities: ["Arrive in Bangkok", "Grand Palace", "Wat Pho Temple", "Chinatown dinner"] as any },
-                { dayNumber: 2, activities: ["Floating market tour", "Chatuchak Weekend Market", "Khao San Road"] as any },
+                { dayNumber: 1, activities: ["Arrive in Bangkok", "Grand Palace", "Wat Pho Temple", "Chinatown dinner"] as any, title: null, description: null, imageUrl: null },
+                { dayNumber: 2, activities: ["Floating market tour", "Chatuchak Weekend Market", "Khao San Road"] as any, title: null, description: null, imageUrl: null },
               ],
             },
           },
@@ -350,13 +366,19 @@ async function main() {
             highlights: ["Beaches", "Islands", "Water Sports", "Nightlife"] as any,
             days: {
               create: [
-                { dayNumber: 1, activities: ["Arrive in Phuket", "Patong Beach", "Big Buddha", "Sunset dinner"] as any },
-                { dayNumber: 2, activities: ["Phi Phi Islands tour", "Snorkeling", "Beach relaxation"] as any },
+                { dayNumber: 1, activities: ["Arrive in Phuket", "Patong Beach", "Big Buddha", "Sunset dinner"] as any, title: null, description: null, imageUrl: null },
+                { dayNumber: 2, activities: ["Phi Phi Islands tour", "Snorkeling", "Beach relaxation"] as any, title: null, description: null, imageUrl: null },
               ],
             },
           },
         ],
       },
+    },
+    update: {
+      description: "Discover the land of smiles with its stunning beaches, ancient temples, and vibrant street food culture.",
+      imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1170&auto=format&fit=crop",
+      highlights: ["Beautiful Beaches", "Ancient Temples", "Street Food", "Islands", "Buddhist Culture"] as any,
+      badge: "Budget Friendly",
     }
   });
 
@@ -389,8 +411,9 @@ async function main() {
   }
 
   // Create Singapore destination
-  const singapore = await prisma.destination.create({
-    data: {
+  const singapore = await prisma.destination.upsert({
+    where: { name: 'Singapore' },
+    create: {
       name: "Singapore",
       description: "Experience the perfect fusion of cultures in this modern city-state with world-class attractions.",
       imageUrl: "https://images.unsplash.com/photo-1525625293386-3f9f99389edd?q=80&w=1170&auto=format&fit=crop",
@@ -416,13 +439,19 @@ async function main() {
             highlights: ["Marina Bay", "Gardens", "Food", "Shopping"] as any,
             days: {
               create: [
-                { dayNumber: 1, activities: ["Arrive in Singapore", "Marina Bay Sands", "Gardens by the Bay", "Chinatown dinner"] as any },
-                { dayNumber: 2, activities: ["Sentosa Island", "Universal Studios", "Clarke Quay"] as any },
+                { dayNumber: 1, activities: ["Arrive in Singapore", "Marina Bay Sands", "Gardens by the Bay", "Chinatown dinner"] as any, title: null, description: null, imageUrl: null },
+                { dayNumber: 2, activities: ["Sentosa Island", "Universal Studios", "Clarke Quay"] as any, title: null, description: null, imageUrl: null },
               ],
             },
           },
         ],
       },
+    },
+    update: {
+      description: "Experience the perfect fusion of cultures in this modern city-state with world-class attractions.",
+      imageUrl: "https://images.unsplash.com/photo-1525625293386-3f9f99389edd?q=80&w=1170&auto=format&fit=crop",
+      highlights: ["Modern Architecture", "Cultural Diversity", "World-Class Food", "Gardens", "Shopping"] as any,
+      badge: "Luxury",
     }
   });
 
@@ -444,8 +473,9 @@ async function main() {
   }
 
   // Create Dubai destination
-  const dubai = await prisma.destination.create({
-    data: {
+  const dubai = await prisma.destination.upsert({
+    where: { name: 'Dubai' },
+    create: {
       name: "Dubai",
       description: "Experience the ultimate luxury and modern marvels in the heart of the Middle East.",
       imageUrl: "https://images.unsplash.com/photo-1518684079-3c830dcef090?q=80&w=1974&auto=format&fit=crop",
@@ -471,13 +501,19 @@ async function main() {
             highlights: ["Burj Khalifa", "Shopping", "Desert", "Luxury Hotels"] as any,
             days: {
               create: [
-                { dayNumber: 1, activities: ["Arrive in Dubai", "Burj Khalifa", "Dubai Mall", "Luxury dinner"] as any },
-                { dayNumber: 2, activities: ["Desert safari", "Camel riding", "Traditional dinner", "Stargazing"] as any },
+                { dayNumber: 1, activities: ["Arrive in Dubai", "Burj Khalifa", "Dubai Mall", "Luxury dinner"] as any, title: null, description: null, imageUrl: null },
+                { dayNumber: 2, activities: ["Desert safari", "Camel riding", "Traditional dinner", "Stargazing"] as any, title: null, description: null, imageUrl: null },
               ],
             },
           },
         ],
       },
+    },
+    update: {
+      description: "Experience the ultimate luxury and modern marvels in the heart of the Middle East.",
+      imageUrl: "https://images.unsplash.com/photo-1518684079-3c830dcef090?q=80&w=1974&auto=format&fit=crop",
+      highlights: ["Burj Khalifa", "Luxury Shopping", "Desert Safari", "Modern Architecture", "Gold Souks"] as any,
+      badge: "Luxury",
     }
   });
 
