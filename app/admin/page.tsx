@@ -707,8 +707,8 @@ const VisaEditDialog = ({ visa, destinations, onClose, onSave }: { visa: any; de
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-sm flex items-center justify-center px-4">
-      <div className="bg-white/95 border border-slate-200 rounded-3xl shadow-2xl max-w-3xl w-full p-6 sm:p-8">
+    <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-sm flex items-start sm:items-center justify-center px-4 py-8 overflow-y-auto">
+      <div className="bg-white/95 border border-slate-200 rounded-3xl shadow-2xl max-w-3xl w-full p-6 sm:p-8 max-h-[80vh] overflow-auto">
         <h3 className="text-lg font-semibold mb-4">Edit Visa</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input value={name} onChange={e=>setName(e.target.value)} className="border border-slate-200 px-3 py-2 rounded-lg focus:border-sky-400 focus:ring-2 focus:ring-sky-200 transition" />
