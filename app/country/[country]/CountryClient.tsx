@@ -327,20 +327,32 @@ const CountryClient = ({ params }: CountryClientProps) => {
                         {itinerary.description}
                       </p>
                       {itinerary.highlights && (
-                        <ul className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
-                          {itinerary.highlights.map((h, i) => (
-                            <motion.li 
-                              key={i} 
-                              className="bg-blue-50 text-[#3b76ad] text-xs sm:text-sm font-medium px-2 sm:px-4 py-1 sm:py-2 rounded-full border border-blue-200"
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              whileInView={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: 0.2 + i * 0.1 }}
-                              viewport={{ once: true }}
-                            >
-                              {h}
-                            </motion.li>
-                          ))}
-                        </ul>
+                        // show up to 4 tags and a "+N more" indicator when there are extras
+                        (() => {
+                          const displayed = (itinerary.highlights || []).slice(0, 4);
+                          const extra = Math.max(0, (itinerary.highlights || []).length - displayed.length);
+                          return (
+                            <ul className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
+                              {displayed.map((h, i) => (
+                                <motion.li
+                                  key={i}
+                                  className="bg-blue-50 text-[#3b76ad] text-xs sm:text-sm font-medium px-2 sm:px-4 py-1 sm:py-2 rounded-full border border-blue-200"
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  whileInView={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: 0.2 + i * 0.1 }}
+                                  viewport={{ once: true }}
+                                >
+                                  {h}
+                                </motion.li>
+                              ))}
+                              {extra > 0 && (
+                                <li className="bg-gray-100 text-gray-600 text-[11px] sm:text-xs font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-gray-200">
+                                  +{extra} more
+                                </li>
+                              )}
+                            </ul>
+                          );
+                        })()
                       )}
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-auto flex-nowrap w-full">
                           <motion.button
