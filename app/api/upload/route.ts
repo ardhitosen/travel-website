@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { uploadFile, uploadFromBase64, uploadFromUrl } from "../../lib/fileUpload";
+import { requireAdmin } from "@/app/lib/authServer";
 
 export const runtime = "nodejs";
 
@@ -35,7 +36,7 @@ function requireAdmin(req: Request): { ok: true; user: { id?: string | number; r
 
 export async function POST(req: Request) {
   // ✅ Auth guard (admin only)
-  const auth = requireAdmin(req);
+  const auth = await requireAdmin();
   if (!auth.ok) {
     return NextResponse.json(
       { error: "Unauthorized" },
