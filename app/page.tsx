@@ -394,10 +394,14 @@ return (
                            onError={() => setImageError(prev => ({ ...prev, [promo.image]: true }))}
                          />
                        )}
-                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                       <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                         <h4 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">{promo.title}</h4>
-                         <p className="text-base sm:text-lg md:text-xl opacity-90">{promo.description}</p>
+                       {/* Stronger permanent gradient to guarantee contrast for white text */}
+                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-100 transition-opacity duration-300" />
+                       <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                         {/* semi-opaque blurred background to improve contrast on busy images */}
+                         <div className="bg-black/40 backdrop-blur-sm rounded-md px-3 py-2">
+                           <h4 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-white" style={{ textShadow: '0 6px 18px rgba(0,0,0,0.6)' }}>{promo.title}</h4>
+                           <p className="text-base sm:text-lg md:text-xl opacity-90 text-white" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.45)' }}>{promo.description}</p>
+                         </div>
                        </div>
                      </div>
                    </motion.div>
