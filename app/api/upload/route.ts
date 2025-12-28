@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { uploadFile, uploadFromBase64, uploadFromUrl } from "../../lib/fileUpload";
-import { requireAdmin } from "@/app/lib/authServer";
+import { requireAdmin } from "../../lib/authServer";
+
 
 export const runtime = "nodejs";
 
@@ -14,25 +15,6 @@ function getCookieValue(cookieHeader: string, name: string): string | null {
   return part.substring(name.length + 1);
 }
 
-function requireAdmin(req: Request): { ok: true; user: { id?: string | number; role?: string } } | { ok: false; status: number } {
-  const cookie = req.headers.get("cookie") || "";
-  const token = getCookieValue(cookie, "token");
-  if (!token) return { ok: false, status: 401 };
-
-  const secret = process.env.JWT_SECRET as string | undefined;
-  if (!secret) return { ok: false, status: 500 };
-
-  try {
-    const payload = jwt.verify(token, secret) as any;
-    const role = payload?.role;
-
-    if (role !== "admin") return { ok: false, status: 403 };
-
-    return { ok: true, user: { id: payload?.sub, role } };
-  } catch {
-    return { ok: false, status: 401 };
-  }
-}
 
 export async function POST(req: Request) {
   // ✅ Auth guard (admin only)
