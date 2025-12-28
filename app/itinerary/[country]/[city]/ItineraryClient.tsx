@@ -382,15 +382,22 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
                         viewport={{ once: true }}
                       >
                         {/* dot that sits on the central line */}
-                        <div className="absolute md:left-24 left-8 md:top-6 top-0 w-3 h-3 rounded-full border-2 border-white z-10" style={{ backgroundColor: '#3b76ad' }} />
+                        {/* timeline dot (desktop only) */}
+                        <div className="hidden md:block absolute md:left-24 left-8 md:top-6 top-0 w-3 h-3 rounded-full border-2 border-white z-10" style={{ backgroundColor: '#3b76ad' }} />
 
-                        {/* date pill */}
-                        <div className="absolute md:left-0 left-0 md:top-0 top-6">
+                        {/* mobile header: show date pill inline above card on small screens */}
+                        <div className="md:hidden mb-3 flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3b76ad' }} />
+                          <div className="text-white px-4 py-1 rounded-xl text-sm font-semibold shadow-md" style={{ backgroundColor: '#3b76ad' }}>Day {day.day}{day.date ? `: ${formatDate(day.date)}` : ''}</div>
+                        </div>
+
+                        {/* date pill (desktop) */}
+                        <div className="hidden md:block absolute md:left-0 left-0 md:top-0 top-6">
                           <div className="text-white px-5 py-2 rounded-xl text-sm font-semibold shadow-md" style={{ backgroundColor: '#3b76ad' }}>Day {day.day}{day.date ? `: ${formatDate(day.date)}` : ''}</div>
                         </div>
 
-                        {/* content card */}
-                        <div className="w-full bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-start gap-6 md:ml-8">
+                        {/* content card: stack on mobile, row on desktop */}
+                        <div className="w-full bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row items-start gap-6 md:ml-8">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#6b7280]">
@@ -408,8 +415,8 @@ const ItineraryClient = ({ params }: ItineraryClientProps) => {
                             </div>
                           </div>
                           {day.imageUrl && (
-                            <div className="w-56 flex-shrink-0">
-                              <img src={day.imageUrl} alt={`Day ${day.day} image`} className="w-full h-40 object-cover rounded-lg shadow-inner" />
+                            <div className="w-full md:w-56 flex-shrink-0">
+                              <img src={day.imageUrl} alt={`Day ${day.day} image`} className="w-full h-40 object-cover rounded-lg shadow-inner mt-4 md:mt-0" />
                             </div>
                           )}
                         </div>

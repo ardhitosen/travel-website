@@ -305,11 +305,12 @@ const CountryClient = ({ params }: CountryClientProps) => {
                   >
                     <div className="relative overflow-hidden">
                       <motion.div
-                        className="w-full h-48 sm:h-80 md:h-[400px] overflow-hidden"
+                        className="relative w-full h-44 sm:h-48 md:h-40 lg:h-44 overflow-hidden"
+                        onClick={() => handleViewItinerary(itinerary)}
                         whileHover={{ scale: 1.1 }}
                         transition={{ duration: 0.6 }}
                       >
-                          <img
+                        <img
                           src={itinerary.image || '/file.svg'}
                           alt={itinerary.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
@@ -318,11 +319,11 @@ const CountryClient = ({ params }: CountryClientProps) => {
                       </motion.div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
-                    <div className="p-4 sm:p-8 flex flex-col flex-1 bg-white">
-                          <h3 className="text-lg sm:text-2xl font-bold text-[#3b76ad] mb-2 sm:mb-3">
+                    <div className="p-2 sm:p-4 flex flex-col flex-1 bg-white">
+                      <h3 className="text-sm sm:text-base md:text-base font-extrabold mb-1 sm:mb-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1679b1] to-[#f05b2d] tracking-tight">
                         {itinerary.name}
                       </h3>
-                          <p className="text-gray-600 mb-3 sm:mb-4 flex-1 text-sm sm:text-lg font-light">
+                      <p className="text-gray-600 mb-2 sm:mb-3 flex-1 text-xs sm:text-sm md:text-sm font-normal">
                         {itinerary.description}
                       </p>
                       {itinerary.highlights && (
