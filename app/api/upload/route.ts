@@ -37,7 +37,10 @@ export async function POST(req: Request) {
   // ✅ Auth guard (admin only)
   const auth = requireAdmin(req);
   if (!auth.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: auth.status });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: ("status" in auth ? auth.status : 401) }
+    );
   }
 
   try {
