@@ -92,7 +92,7 @@ const AdminPage = () => {
   const uploadFile = async (file: File) => {
     const form = new FormData();
     form.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: form });
+    const res = await fetch("/api/upload", { method: "POST", body: form, credentials: "same-origin" });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'unknown' }));
       throw new Error(err?.error || 'Upload failed');
