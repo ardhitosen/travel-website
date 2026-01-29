@@ -1,3 +1,4 @@
+// lib/fileUpload.ts
 import { writeFile, mkdir } from "fs/promises";
 import { join, resolve } from "path";
 import crypto from "crypto";
@@ -19,8 +20,13 @@ const ALLOWED_TYPES = (process.env.ALLOWED_FILE_TYPES || "image/jpeg,image/png,i
   .map((s) => s.trim())
   .filter(Boolean);
 
-// Optional explicit upload root
+// Optional explicit upload root (keep your current behavior)
 const UPLOAD_ROOT = process.env.UPLOAD_DIR ? resolve(process.env.UPLOAD_DIR) : join(process.cwd(), "public");
+
+// ✅ Disable URL uploads in production by default.
+// Turn on only when explicitly needed (dev/staging) by setting ALLOW_URL_UPLOADS=true.
+const ALLOW_URL_UPLOADS =
+  process.env.NODE_ENV !== "production" && process.env.ALLOW_URL_UPLOADS === "true";
 
 type FileLike = {
   name?: string;
@@ -30,11 +36,13 @@ type FileLike = {
 };
 
 const isFileLike = (f: unknown): f is FileLike => {
-  return typeof f === "object" && f !== null && (
-    typeof (f as FileLike).arrayBuffer === "function" ||
-    typeof (f as FileLike).size === "number" ||
-    typeof (f as FileLike).name === "string" ||
-    typeof (f as FileLike).type === "string"
+  return (
+    typeof f === "object" &&
+    f !== null &&
+    (typeof (f as FileLike).arrayBuffer === "function" ||
+      typeof (f as FileLike).size === "number" ||
+      typeof (f as FileLike).name === "string" ||
+      typeof (f as FileLike).type === "string")
   );
 };
 
@@ -59,7 +67,7 @@ function detectImageType(buf: Buffer): { mime: string; ext: string } | null {
   if (buf.length < 12) return null;
 
   // PNG: 89 50 4E 47 0D 0A 1A 0A
-  if (buf.slice(0, 8).equals(Buffer.from([0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A]))) {
+  if (buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
     return { mime: "image/png", ext: "png" };
   }
 
@@ -69,7 +77,8 @@ function detectImageType(buf: Buffer): { mime: string; ext: string } | null {
   }
 
   // GIF: "GIF87a" or "GIF89a"
-  if (buf.slice(0, 6).toString("ascii") === "GIF87a" || buf.slice(0, 6).toString("ascii") === "GIF89a") {
+  const gifSig = buf.slice(0, 6).toString("ascii");
+  if (gifSig === "GIF87a" || gifSig === "GIF89a") {
     return { mime: "image/gif", ext: "gif" };
   }
 
@@ -201,7 +210,10 @@ export async function uploadFile(file: unknown, folder: string = "uploads"): Pro
 
     // enforce size again based on actual buffer
     if (buffer.length > MAX_FILE_SIZE) {
-      return { success: false, error: `File size too large. Maximum size is ${Math.floor(MAX_FILE_SIZE / 1024 / 1024)}MB` };
+      return {
+        success: false,
+        error: `File size too large. Maximum size is ${Math.floor(MAX_FILE_SIZE / 1024 / 1024)}MB`,
+      };
     }
 
     // validate by magic bytes
@@ -224,7 +236,11 @@ export async function uploadFile(file: unknown, folder: string = "uploads"): Pro
   }
 }
 
-export async function uploadFromBase64(base64Data: string, folder: string = "uploads", filename?: string): Promise<UploadResult> {
+export async function uploadFromBase64(
+  base64Data: string,
+  folder: string = "uploads",
+  filename?: string
+): Promise<UploadResult> {
   try {
     const uploadsDir = join(UPLOAD_ROOT, folder);
     await mkdir(uploadsDir, { recursive: true });
@@ -268,6 +284,11 @@ export async function uploadFromBase64(base64Data: string, folder: string = "upl
 }
 
 export async function uploadFromUrl(imageUrl: string, folder: string = "uploads"): Promise<UploadResult> {
+  // ✅ Hard block in production unless explicitly enabled
+  if (!ALLOW_URL_UPLOADS) {
+    return { success: false, error: "URL uploads are disabled" };
+  }
+
   try {
     if (!isUrlAllowed(imageUrl)) {
       return { success: false, error: "URL not allowed" };
@@ -313,7 +334,6 @@ export async function uploadFromUrl(imageUrl: string, folder: string = "uploads"
   } catch (error) {
     console.error("URL upload error:", error);
     const msg = error instanceof Error ? error.message : "Upload failed";
-    // AbortController throws a DOMException in some runtimes; normalize message
     if (String(msg).toLowerCase().includes("aborted")) {
       return { success: false, error: "Fetch timed out" };
     }
