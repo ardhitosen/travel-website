@@ -1,23 +1,30 @@
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 import { uploadFile, uploadFromBase64, uploadFromUrl } from "../../lib/fileUpload";
 import { requireAdmin } from "../../lib/authServer";
 
-
 export const runtime = "nodejs";
 
-function getCookieValue(cookieHeader: string, name: string): string | null {
-  const part = cookieHeader
-    .split(";")
-    .map((c) => c.trim())
-    .find((c) => c.startsWith(`${name}=`));
-  if (!part) return null;
-  return part.substring(name.length + 1);
-}
-
-
+/**
+ * Kill-switch behavior:
+ * - In production, uploads are DISABLED unless UPLOADS_ENABLED === "true".
+ *
+ * Remote/base64 behavior:
+ * - In production, JSON uploads ({ url } and { base64 }) are disabled by default.
+ *   You can re-enable them ONLY if you explicitly set:
+ *     UPLOADS_ALLOW_REMOTE === "true"
+ *     UPLOADS_ALLOW_BASE64 === "true"
+ */
 export async function POST(req: Request) {
-  // ✅ Auth guard (admin only)
+  const isProd = process.env.NODE_ENV === "production";
+
+  // 1) Global kill-switch (best emergency control)
+  const uploadsEnabled = process.env.UPLOADS_ENABLED === "true";
+  if (isProd && !uploadsEnabled) {
+    // Return 404 to reduce scanner signal (vs 403)
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // 2) Auth guard (admin only)
   const auth = await requireAdmin();
   if (!auth.ok) {
     return NextResponse.json(
@@ -33,19 +40,14 @@ export async function POST(req: Request) {
     if (contentType.includes("multipart/form-data")) {
       const form = await req.formData();
       const file = form.get("file");
+
       if (!file) {
         console.error("Upload: form did not contain file field");
         return NextResponse.json({ error: "file is required" }, { status: 400 });
       }
 
-      // Ensure it has arrayBuffer
       const maybeFile = file as unknown;
       if (typeof (maybeFile as { arrayBuffer?: unknown }).arrayBuffer !== "function") {
-        try {
-          console.error("Upload: received file object without arrayBuffer method", Object.keys(Object(maybeFile)));
-        } catch {
-          console.error("Upload: received file object without arrayBuffer method");
-        }
         return NextResponse.json({ error: "Invalid file upload" }, { status: 400 });
       }
 
@@ -70,7 +72,13 @@ export async function POST(req: Request) {
       // ignore parse errors
     }
 
+    // ---- Disable { url } uploads in production (recommended)
     if (typeof body === "object" && body !== null && "url" in body) {
+      const allowRemote = !isProd || process.env.UPLOADS_ALLOW_REMOTE === "true";
+      if (!allowRemote) {
+        return NextResponse.json({ error: "Remote URL uploads disabled" }, { status: 403 });
+      }
+
       const url = (body as Record<string, unknown>)["url"];
       const result = await uploadFromUrl(String(url), "jos");
       if (!result.success) {
@@ -85,7 +93,13 @@ export async function POST(req: Request) {
       });
     }
 
+    // ---- Disable { base64 } uploads in production (recommended)
     if (typeof body === "object" && body !== null && "base64" in body) {
+      const allowBase64 = !isProd || process.env.UPLOADS_ALLOW_BASE64 === "true";
+      if (!allowBase64) {
+        return NextResponse.json({ error: "Base64 uploads disabled" }, { status: 403 });
+      }
+
       const base64 = (body as Record<string, unknown>)["base64"];
       const result = await uploadFromBase64(String(base64), "jos");
       if (!result.success) {
@@ -100,8 +114,7 @@ export async function POST(req: Request) {
       });
     }
 
-    console.error("Upload: no valid payload provided");
-    return NextResponse.json({ error: "Provide multipart file, url, or base64" }, { status: 400 });
+    return NextResponse.json({ error: "Provide multipart file" }, { status: 400 });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
