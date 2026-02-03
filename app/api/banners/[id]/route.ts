@@ -1,112 +1,152 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../lib/prisma";
-import { join } from 'path';
-import { unlink } from 'fs/promises';
+import { join } from "path";
+import { unlink } from "fs/promises";
 
-// Allow flexible context param coming from Next's route handler runtime.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function PUT(req: Request, context: any) {
-  const params = context?.params as { id: string } | undefined;
-  const id = Number(params?.id);
-  if (Number.isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
-  const body = await req.json();
-  const { imageUrl, fact, destination, position, title, description } = body;
+type PRAGMARow = Record<string, unknown>;
 
-  // Instead of using Prisma's typed findUnique/update (which will fail if
-  // the runtime DB schema differs from the Prisma schema), inspect the
-  // actual table columns via PRAGMA and perform a raw SELECT/UPDATE using
-  // only columns that exist. This avoids P2022 errors when columns like
-  // `title`/`description` are missing from the DB.
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const idNum = Number(id);
+  if (!Number.isFinite(idNum) || idNum <= 0) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  const body = await req.json().catch(() => ({} as Record<string, unknown>));
+  const b = (typeof body === "object" && body !== null ? (body as Record<string, unknown>) : {}) as Record<
+    string,
+    unknown
+  >;
+
+  const imageUrl = b.imageUrl;
+  const fact = b.fact;
+  const destination = b.destination;
+  const position = b.position;
+  const title = b.title;
+  const description = b.description;
+
   try {
-    const cols: any[] = await prisma.$queryRawUnsafe("PRAGMA table_info('BannerSlide')");
-    const existingCols = Array.isArray(cols) ? cols.map(c => String(c.name)) : [];
-    if (!existingCols || existingCols.length === 0) return NextResponse.json({ error: 'BannerSlide table not found' }, { status: 500 });
+    const cols = (await prisma.$queryRawUnsafe(
+      "PRAGMA table_info('BannerSlide')"
+    )) as PRAGMARow[] | unknown;
 
-    // Select only columns that exist
-    const candidateCols = ['id','imageUrl','fact','title','description','destination','position','createdAt','updatedAt'];
-    const selectCols = candidateCols.filter(c => existingCols.includes(c)).map(c => `"${c}"`);
-    const sql = `SELECT ${selectCols.join(', ')} FROM "BannerSlide" WHERE "id" = ${Number(id)} LIMIT 1`;
-    const rows: any[] = await prisma.$queryRawUnsafe(sql);
-    const existingRow = Array.isArray(rows) && rows.length ? rows[0] : null;
-    if (!existingRow) return NextResponse.json({ error: 'Banner not found' }, { status: 404 });
+    const existingCols = Array.isArray(cols) ? cols.map((c) => String(c["name"])) : [];
+    if (!existingCols.length) {
+      return NextResponse.json({ error: "BannerSlide table not found" }, { status: 500 });
+    }
 
-    // Build list of columns to update (only those that exist)
-    const updateMap: Record<string, any> = {};
-    if (existingCols.map(s => s.toLowerCase()).includes('imageurl') && imageUrl !== undefined) updateMap.imageUrl = imageUrl;
-    if (existingCols.map(s => s.toLowerCase()).includes('fact') && fact !== undefined) updateMap.fact = fact;
-    if (existingCols.map(s => s.toLowerCase()).includes('destination') && destination !== undefined) updateMap.destination = destination;
-    if (existingCols.map(s => s.toLowerCase()).includes('position') && position !== undefined) updateMap.position = position;
-    // Only include title/description if those columns actually exist AND values provided
-    if (existingCols.includes('title') && title !== undefined) updateMap.title = title;
-    if (existingCols.includes('description') && description !== undefined) updateMap.description = description;
+    const candidateCols = [
+      "id",
+      "imageUrl",
+      "fact",
+      "title",
+      "description",
+      "destination",
+      "position",
+      "createdAt",
+      "updatedAt",
+    ];
 
-    // If nothing to update, return the existing row
+    const selectCols = candidateCols.filter((c) => existingCols.includes(c)).map((c) => `"${c}"`);
+    const sql = `SELECT ${selectCols.join(", ")} FROM "BannerSlide" WHERE "id" = ${idNum} LIMIT 1`;
+    const rows = (await prisma.$queryRawUnsafe(sql)) as unknown[];
+
+    const existingRow = Array.isArray(rows) && rows.length ? (rows[0] as Record<string, unknown>) : null;
+    if (!existingRow) return NextResponse.json({ error: "Banner not found" }, { status: 404 });
+
+    // Build update map only for columns that exist
+    const lowerCols = new Set(existingCols.map((s) => s.toLowerCase()));
+    const updateMap: Record<string, unknown> = {};
+
+    if (lowerCols.has("imageurl") && imageUrl !== undefined) updateMap.imageUrl = imageUrl;
+    if (lowerCols.has("fact") && fact !== undefined) updateMap.fact = fact;
+    if (lowerCols.has("destination") && destination !== undefined) updateMap.destination = destination;
+    if (lowerCols.has("position") && position !== undefined) updateMap.position = position;
+    if (existingCols.includes("title") && title !== undefined) updateMap.title = title;
+    if (existingCols.includes("description") && description !== undefined) updateMap.description = description;
+
     if (Object.keys(updateMap).length === 0) return NextResponse.json(existingRow);
 
-    // Build a safe-ish raw UPDATE using JSON.stringify for values and set updatedAt if present
     const setParts: string[] = [];
     for (const k of Object.keys(updateMap)) {
-      const val = updateMap[k];
-      setParts.push(`"${k}" = ${JSON.stringify(val === undefined ? null : val)}`);
+      setParts.push(`"${k}" = ${JSON.stringify(updateMap[k] === undefined ? null : updateMap[k])}`);
     }
-    if (existingCols.includes('updatedAt')) setParts.push(`"updatedAt" = CURRENT_TIMESTAMP`);
+    if (existingCols.includes("updatedAt")) setParts.push(`"updatedAt" = CURRENT_TIMESTAMP`);
 
-    const updateSql = `UPDATE "BannerSlide" SET ${setParts.join(', ')} WHERE "id" = ${Number(id)}`;
+    const updateSql = `UPDATE "BannerSlide" SET ${setParts.join(", ")} WHERE "id" = ${idNum}`;
     await prisma.$executeRawUnsafe(updateSql);
 
-    // Return the updated row (select same columns as before)
-    const afterRows: any[] = await prisma.$queryRawUnsafe(sql);
-    return NextResponse.json(afterRows[0] || null);
+    const afterRows = (await prisma.$queryRawUnsafe(sql)) as unknown[];
+    return NextResponse.json((Array.isArray(afterRows) && afterRows[0]) || null);
   } catch (err) {
-    console.error('Error updating banner (raw path):', err);
-    return NextResponse.json({ error: 'Failed to update banner' }, { status: 500 });
+    console.error("Error updating banner (raw path):", err);
+    return NextResponse.json({ error: "Failed to update banner" }, { status: 500 });
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function DELETE(req: Request, context: any) {
-  const params = context?.params as { id: string } | undefined;
-  const id = Number(params?.id);
-  if (Number.isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
-  // Try to find the existing row using a raw SELECT that only asks for
-  // columns that actually exist. This avoids Prisma's typed findUnique
-  // which will error with P2022 when the DB schema differs.
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const idNum = Number(id);
+  if (!Number.isFinite(idNum) || idNum <= 0) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
   try {
-    const cols: any[] = await prisma.$queryRawUnsafe("PRAGMA table_info('BannerSlide')");
-    const existingCols = Array.isArray(cols) ? cols.map(c => String(c.name)) : [];
-    if (!existingCols || existingCols.length === 0) return NextResponse.json({ error: 'BannerSlide table not found' }, { status: 500 });
+    const cols = (await prisma.$queryRawUnsafe(
+      "PRAGMA table_info('BannerSlide')"
+    )) as PRAGMARow[] | unknown;
 
-    const candidateCols = ['id','imageUrl','fact','title','description','destination','position','createdAt','updatedAt'];
-    const selectCols = candidateCols.filter(c => existingCols.includes(c)).map(c => `"${c}"`);
-    const selectSql = `SELECT ${selectCols.join(', ')} FROM "BannerSlide" WHERE "id" = ${Number(id)} LIMIT 1`;
-    const rows: any[] = await prisma.$queryRawUnsafe(selectSql);
-    const existingRow = Array.isArray(rows) && rows.length ? rows[0] : null;
-    if (!existingRow) return NextResponse.json({ error: 'Banner not found' }, { status: 404 });
+    const existingCols = Array.isArray(cols) ? cols.map((c) => String(c["name"])) : [];
+    if (!existingCols.length) {
+      return NextResponse.json({ error: "BannerSlide table not found" }, { status: 500 });
+    }
 
-    // Try to remove the file from disk if an imageUrl exists
+    const candidateCols = [
+      "id",
+      "imageUrl",
+      "fact",
+      "title",
+      "description",
+      "destination",
+      "position",
+      "createdAt",
+      "updatedAt",
+    ];
+    const selectCols = candidateCols.filter((c) => existingCols.includes(c)).map((c) => `"${c}"`);
+    const selectSql = `SELECT ${selectCols.join(", ")} FROM "BannerSlide" WHERE "id" = ${idNum} LIMIT 1`;
+    const rows = (await prisma.$queryRawUnsafe(selectSql)) as unknown[];
+
+    const existingRow = Array.isArray(rows) && rows.length ? (rows[0] as Record<string, unknown>) : null;
+    if (!existingRow) return NextResponse.json({ error: "Banner not found" }, { status: 404 });
+
+    // best-effort remove local file
     try {
-      if (existingRow?.imageUrl) {
-        const possible = String(existingRow.imageUrl).replace(/^\/+/, '');
-        const filepath = join(process.cwd(), 'public', possible);
-        try { await unlink(filepath); } catch (err) { console.warn('Could not unlink file', filepath, err); }
+      const img = existingRow["imageUrl"];
+      if (typeof img === "string" && img) {
+        const possible = img.replace(/^\/+/, "");
+        if (!possible.includes("..") && !/^https?:\/\//i.test(possible)) {
+          const filepath = join(process.cwd(), "public", possible);
+          try {
+            await unlink(filepath);
+          } catch (e) {
+            console.warn("Could not unlink file", filepath, e);
+          }
+        }
       }
     } catch (e) {
-      console.error('Error while attempting to remove banner image:', e);
+      console.error("Error while attempting to remove banner image:", e);
     }
 
-    // Perform a raw DELETE so Prisma doesn't attempt a typed delete that
-    // references missing columns on the model. Using raw SQL we only need
-    // the table and id column to exist.
-    try {
-      await prisma.$executeRawUnsafe(`DELETE FROM "BannerSlide" WHERE "id" = ${Number(id)}`);
-    } catch (err) {
-      console.error('Error deleting banner record (raw):', err);
-      return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
-    }
-
+    await prisma.$executeRawUnsafe(`DELETE FROM "BannerSlide" WHERE "id" = ${idNum}`);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('Error during banner delete flow:', err);
-    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+    console.error("Error during banner delete flow:", err);
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }

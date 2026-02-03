@@ -1,46 +1,70 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../lib/prisma";
 
-type PutContext = { params?: { id?: string } } | undefined;
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const idNum = Number(id);
 
-export async function PUT(req: Request, context: PutContext) {
-  const params = context?.params;
-  const id = Number(params?.id);
-  const raw = (await req.json()) as unknown;
-  if (!id) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
-  // Only allow known fields; ensure destination is stored as string
-  const maybe = (obj: unknown) => (typeof obj === 'object' && obj !== null ? obj as Record<string, unknown> : {});
-  const body = maybe(raw);
+  if (!Number.isFinite(idNum) || idNum <= 0) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  const raw = await req.json().catch(() => ({} as unknown));
+
+  const body =
+    typeof raw === "object" && raw !== null ? (raw as Record<string, unknown>) : {};
+
   const fields = [
-    'name',
-    'description',
-    'duration',
-    'processingTime',
-    'price',
-    'validity',
-    'requirements',
-    'documents',
-    'destination',
-    'imageUrl',
-  ];
+    "name",
+    "description",
+    "duration",
+    "processingTime",
+    "price",
+    "validity",
+    "requirements",
+    "documents",
+    "destination",
+    "imageUrl",
+  ] as const;
+
   const updateData = fields.reduce<Record<string, unknown>>((acc, f) => {
     if (body[f] !== undefined) acc[f] = body[f];
     return acc;
   }, {});
-  const updated = await prisma.visaType.update({ where: { id }, data: updateData });
-  return NextResponse.json(updated);
+
+  try {
+    const updated = await prisma.visaType.update({
+      where: { id: idNum },
+      data: updateData,
+    });
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error("Failed to update visa type:", err);
+    return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+  }
 }
 
-export async function DELETE(_: Request, context: PutContext) {
-  const params = context?.params;
-  const id = Number(params?.id);
-  if (!id) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
-  // delete dependent visa applications first to avoid FK constraint errors
-  try {
-    await prisma.visaApplication.deleteMany({ where: { visaTypeId: id } });
-  } catch {
-    // non-fatal, continue to delete visaType
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const idNum = Number(id);
+
+  if (!Number.isFinite(idNum) || idNum <= 0) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
-  await prisma.visaType.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
+
+  try {
+    // delete dependent visa applications first to avoid FK constraint errors
+    await prisma.visaApplication.deleteMany({ where: { visaTypeId: idNum } }).catch(() => {});
+    await prisma.visaType.delete({ where: { id: idNum } });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Failed to delete visa type:", err);
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+  }
 }
